@@ -81,13 +81,7 @@
     main {
         margin-top: 20px;
     }
-    h1.gallery-title, h2.gallery-subtitle {
-        color: #2c3e50;
-        border-bottom: 2px solid #eee;
-        padding-bottom: 10px;
-        margin-bottom: 20px;
-        font-size: 1.5rem; /* Adjust title size */
-    }
+    /* Removed h1.gallery-title CSS */
 
     /* Loading Spinner */
     .loading {
@@ -110,50 +104,8 @@
         to { -webkit-transform: rotate(360deg); }
     }
 
-    /* Breadcrumbs */
-    .breadcrumbs {
-      margin-bottom: 15px;
-      font-size: 0.9em;
-      color: #555;
-      background-color: #f0f3f5;
-      padding: 8px 12px;
-      border-radius: 5px;
-      border: 1px solid #e2e6e9;
-    }
-    .breadcrumbs a {
-      color: #007bff;
-      text-decoration: none;
-      margin: 0 3px;
-    }
-    .breadcrumbs a:hover {
-      text-decoration: underline;
-    }
-    .breadcrumbs span:last-child {
-      font-weight: bold;
-      color: #333;
-    }
-
-    /* Action Buttons (Refresh) */
-    .action-buttons {
-        margin-bottom: 20px;
-    }
-    .action-buttons button {
-        background-color: #6c757d;
-        color: white;
-        border: none;
-        padding: 8px 15px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 0.9em;
-        transition: background-color 0.2s, transform 0.1s;
-    }
-    .action-buttons button:hover {
-        background-color: #5a6268;
-        transform: translateY(-1px);
-    }
-    .action-buttons button:active {
-        transform: translateY(0);
-    }
+    /* Removed Breadcrumbs CSS */
+    /* Removed Action Buttons CSS */
 
     /* Products Grid */
     .products {
@@ -172,14 +124,12 @@
     }
 
     .product-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-2px);
     }
 
-    /* !!! 主要修改区域 !!! */
-    /* 使用 aspect-ratio 替代 height: 0 和 padding-bottom */
     .product-card img {
       width: 100%;
-      height: auto; /* 允许高度自适应，由 aspect-ratio 控制 */
+      height: auto; 
       aspect-ratio: 3 / 4; /* 维持 3:4 的宽高比 */
       object-fit: cover; /* 保持图片比例，裁剪填充 */
       object-position: center; /* 保证图片居中显示,避免裁剪失真*/
@@ -189,7 +139,7 @@
         padding: 10px;
     }
 
-    .product-card h3 { /* Renamed h2 to h3 for semantic structure */
+    .product-card h3 { 
       font-size: 1.1rem;
       margin: 0 0 5px 0;
       color: #2c3e50;
@@ -213,12 +163,11 @@
     }
 
     /* Fallback folder icon for categories without preview or non-product folders */
-    /* 也使用 aspect-ratio 保持一致的尺寸 */
-    .product-card .folder-icon { /* This is the div that contains the Font Awesome icon */
+    .product-card .folder-icon {
         width: 100%;
-        height: auto; /* 允许高度自适应，由 aspect-ratio 控制 */
+        height: auto; 
         aspect-ratio: 3 / 4; /* 维持 3:4 的宽高比 */
-        display: flex; /* Keep for centering icon */
+        display: flex; 
         align-items: center;
         justify-content: center;
         font-size: 60px;
@@ -367,15 +316,20 @@
     </header>
 
     <main>
-      <h1 class="gallery-title">商品列表 <span id="galleryLoading" class="loading hidden"></span></h1>
-      <div class="breadcrumbs" id="breadcrumbs">
-          <!-- Breadcrumbs will be inserted here by JavaScript -->
-      </div>
-      <div class="action-buttons">
+      <!-- 移除 "商品列表" 标题和加载指示器 -->
+      <!-- <h1 class="gallery-title">商品列表 <span id="galleryLoading" class="loading hidden"></span></h1> -->
+      <!-- 移除面包屑导航 -->
+      <!-- <div class="breadcrumbs" id="breadcrumbs"></div> -->
+      <!-- 移除刷新按钮 -->
+      <!-- <div class="action-buttons">
           <button onclick="loadImages(currentDirPath)">刷新当前目录</button>
-      </div>
+      </div> -->
+
+      <!-- 只保留加载指示器，但现在将它直接显示在 noContentMessage 旁边或取代它 -->
+      <p class="no-content-message" id="noContentMessage">加载中... <span id="galleryLoading" class="loading"></span></p>
+
       <section class="products" id="productsGrid">
-          <p class="no-content-message" id="noContentMessage">加载中...</p>
+          <!-- 商品卡片将在这里动态生成 -->
       </section>
 
       <!-- 通用商品详情模态框 -->
@@ -411,7 +365,7 @@
     let currentDirPath = ''; // 追踪当前所在的目录路径
     const productsGrid = document.getElementById('productsGrid');
     const noContentMessage = document.getElementById('noContentMessage');
-    const breadcrumbsDiv = document.getElementById('breadcrumbs');
+    // const breadcrumbsDiv = document.getElementById('breadcrumbs'); // 移除
     const galleryLoadingSpinner = document.getElementById('galleryLoading');
 
     // Modal elements
@@ -574,46 +528,7 @@
 
     // --- UI 渲染函数 ---
 
-    /**
-     * 更新面包屑导航。
-     */
-    function updateBreadcrumbs() {
-        breadcrumbsDiv.innerHTML = '';
-        let pathSegments = currentDirPath.split('/').filter(s => s !== '');
-      
-        // 根目录链接
-        const rootLink = document.createElement('a');
-        rootLink.href = '#';
-        rootLink.textContent = '根目录';
-        rootLink.onclick = (event) => {
-            event.preventDefault();
-            loadImages(''); // 导航到根目录
-        };
-        breadcrumbsDiv.appendChild(rootLink);
-
-        let currentPathAccumulated = '';
-        pathSegments.forEach((segment, index) => {
-            currentPathAccumulated += (currentPathAccumulated ? '/' : '') + segment;
-            breadcrumbsDiv.appendChild(document.createTextNode(' / '));
-            
-            const linkText = segment; 
-            if (index < pathSegments.length - 1) { // 不是最后一个片段（即当前目录）
-                const link = document.createElement('a');
-                link.href = '#';
-                link.textContent = linkText;
-                const pathToGo = currentPathAccumulated; // 捕获当前状态
-                link.onclick = (event) => {
-                    event.preventDefault();
-                    loadImages(pathToGo);
-                };
-                breadcrumbsDiv.appendChild(link);
-            } else { // 最后一个片段（当前活动目录）
-                const span = document.createElement('span');
-                span.textContent = linkText;
-                breadcrumbsDiv.appendChild(span);
-            }
-        });
-    }
+    // 移除 updateBreadcrumbs 函数
 
     /**
      * 创建一个商品卡片（目录或分类）。
@@ -747,11 +662,11 @@
 
         productsGrid.innerHTML = ''; // 清空现有内容
         noContentMessage.classList.remove('hidden'); // 默认显示无内容信息
-        galleryLoadingSpinner.classList.remove('hidden'); // 显示加载状态
-        noContentMessage.textContent = '加载中...';
+        galleryLoadingSpinner.classList.remove('hidden'); // 确保加载指示器可见
+        noContentMessage.textContent = '加载中...'; // 设置加载消息
 
-        // 设置导航条标题
-        document.querySelector('.gallery-title').firstChild.nodeValue = `商品列表 (${currentDirPath || '根目录'})`;
+        // 移除设置导航条标题的逻辑
+        //document.querySelector('.gallery-title').firstChild.nodeValue = `商品列表 (${currentDirPath || '根目录'})`;
 
         const queryParams = new URLSearchParams();
         queryParams.append('count', '-1'); // 获取所有文件和目录
@@ -772,6 +687,7 @@
             if (!response.ok) {
                 const errorMsg = await handleApiError(response);
                 noContentMessage.textContent = `加载内容失败: ${errorMsg}`;
+                galleryLoadingSpinner.classList.add('hidden'); // 隐藏加载指示器
                 return;
             }
 
@@ -791,23 +707,17 @@
                 });
                 
                 const directoryResults = await Promise.all(directoryPromises);
-                itemsToRender.push(...directoryResults);
+                itemsToRender.push(...directoryResults.sort((a, b) => a.dirName.localeCompare(b.dirName))); // 排序
                 hasContent = hasContent || directoryResults.length > 0;
             }
 
-            // --- 处理文件 (如果当前目录是产品目录本身，且该目录没有子目录，可能会将文件直接显示为商品卡片，
-            //     但根据需求，文件应该在模态框中展示，所以这里不直接渲染文件为商品卡片)
-            // if (data.files && data.files.length > 0) {
-            //     // 可以在这里根据情况决定是否将文件也显示为产品卡片
-            // }
-
-            // 排序并渲染所有卡片
+            // 渲染所有卡片
             if (itemsToRender.length > 0) {
-                itemsToRender.sort((a, b) => a.dirName.localeCompare(b.dirName)).forEach(item => {
+                itemsToRender.forEach(item => {
                     productsGrid.appendChild(createProductCard(item.parsedData, item.dirPath, item.previewImageUrl, item.isProductFolder));
                 });
-                noContentMessage.classList.add('hidden');
-            } else if (!hasContent) {
+                noContentMessage.classList.add('hidden'); // 如果有内容，隐藏“无内容”消息
+            } else { // 如果没有内容（包括文件和目录）
                 noContentMessage.textContent = '此目录暂无内容。';
             }
 
@@ -816,7 +726,7 @@
             console.error('List API Error:', error);
         } finally {
             galleryLoadingSpinner.classList.add('hidden'); // 隐藏加载状态
-            updateBreadcrumbs(); // 更新面包屑导航
+            // 移除 updateBreadcrumbs() 调用
         }
     }
   </script>
