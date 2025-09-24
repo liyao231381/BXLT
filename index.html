@@ -40,18 +40,16 @@
 
     /* 页面布局 */
     .container {
-      max-width: 600px; /* 手机端宽度 */
       margin: 0 auto;
-      padding: 20px;
+      padding: 5px;
     }
 
     header {
       background-color: #fff;
       padding: 15px 0;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* 轻微阴影 */
-      border-radius: 8px; /* 圆角 */
     }
 
     header .logo {
@@ -90,10 +88,10 @@
 
     nav a.filter-tag {
         display: inline-block;
-        padding: 6px 12px;
+        padding: 4px 8px;
         background-color: #e9ecef; /* 默认背景色 */
         color: #495057; /* 默认文字颜色 */
-        border-radius: 20px; /* 圆角标签 */
+        border-radius: 5px; /* 圆角标签 */
         font-size: 0.85rem;
         transition: background-color 0.2s, color 0.2s;
         flex-shrink: 0; /* 防止标签挤压 */
@@ -101,7 +99,7 @@
     }
 
     nav a.filter-tag.active { /* 选中状态 */
-      background-color: #007bff;
+      background-color: #00aaff;
       color: #fff;
     }
     nav a.filter-tag:hover:not(.active) { /* 悬停效果 (未选中时) */
@@ -113,13 +111,11 @@
     .products {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(45%, 1fr)); /* 移动端双排 */
-      gap: 15px; /* 商品卡片之间间距 */
-      margin-top: 20px;
+      gap: 5px; /* 商品卡片之间间距 */
     }
 
     .product-card {
       background-color: #fff;
-      border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       transition: transform 0.2s ease-in-out;
@@ -138,7 +134,6 @@
       aspect-ratio: 3 / 4; /* 维持 3:4 的宽高比 */
       object-fit: cover; /* 保持图片比例，裁剪填充 */
       object-position: center; /* 保证图片居中显示,避免裁剪失真*/
-      background-color: #f0f0f0; /* 加载占位符颜色 */
     }
 
     .product-info {
@@ -173,22 +168,31 @@
       font-size: 1.1rem;
       font-weight: bold;
       color: #e64a19; /* 显眼的价格颜色 */
-      margin-left: 10px; /* 价格与名称间距 */
+      margin-right: 10px; /* 价格与名称间距 */
       flex-shrink: 0; /* 防止价格被挤压 */
     }
 
     .product-tags, .product-season {
-        font-size: 0.85rem;
+        font-size: 0.65rem;
         color: #777;
         margin-bottom: 3px;
     }
+    
     .product-tags span, .product-season span {
         display: inline-block;
         margin-right: 5px;
-        background-color: #eee;
         padding: 2px 6px;
         border-radius: 3px;
     }
+
+    .product-tags span {
+        background-color: #f7f7df;
+    }
+
+    .product-season span {
+        background-color: #e1f5ff;
+    }
+
     .product-season {
         margin-top: auto; /* 推到最底部 */
         padding-top: 5px;
@@ -340,10 +344,15 @@
 
     footer {
       text-align: center;
-      margin-top: 30px;
-      padding: 20px 0;
+      margin-top: 10px;
+      padding: 5px 0;
       background-color: #ddd;
-      border-radius: 8px;
+      position: absolute;
+      font-size: smaller;
+      font-weight: light;
+      bottom: 0;
+      left: 0;
+      right: 0;
     }
 
     /* 加载状态 */
@@ -416,7 +425,7 @@
     </main>
 
     <footer>
-      <p>© 2023 李瑶的服装店. All rights reserved.</p>
+      <p>© 2025 李瑶的服装店. All rights reserved.</p>
     </footer>
   </div>
 
@@ -588,11 +597,11 @@
                     <img src="${product.images.length > 0 ? product.images[0].src : ''}" alt="${product.name}" loading="lazy">
                     <div class="product-info">
                         <div class="product-name-price">
-                            <h2>${product.name}</h2>
                             <p class="price">¥${product.price}</p>
+                            <h2>${product.name}</h2>
                         </div>
-                        <div class="product-tags">${product.tags.length > 0 ? '标签: ' + product.tags.map(t => `<span>${t}</span>`).join('') : ''}</div>
-                        <div class="product-season">${product.seasons.length > 0 ? '季节: ' + product.seasons.map(s => `<span>${s}</span>`).join('') : ''}</div>
+                        <div class="product-season">${product.seasons.length > 0 ?  product.seasons.map(s => `<span>${s}</span>`).join('') : ''}</div>
+                        <div class="product-tags">${product.tags.length > 0 ?  product.tags.map(t => `<span>${t}</span>`).join('') : ''}</div>
                     </div>
                 </a>
             `;
