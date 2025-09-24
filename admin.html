@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服装图片管理后台</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      line-height: 1.6;
+      background-color: #f4f4f4;
+      color: #333;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* 通用输入框和标签样式 */
+    label {
+      font-weight: bold;
+      flex-shrink: 0; /* 防止 label 缩小 */
+      margin-bottom: 0; /* 默认覆盖，由父容器控制 */
+      white-space: nowrap; /* 防止 label 换行 */
+      /* 核心修改：确保 label 内容左对齐 */
+      text-align: left !important; /* 强制左对齐，覆盖潜在的右对齐 */
+    }
+    input[type="text"],
+    input[type="number"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      flex-grow: 1; /* 输入框占据剩余空间 */
+      margin-bottom: 0; /* 默认覆盖 */
+    }
+
+    /* API Token 部分 */
+    .api-token-section {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .api-token-section label {
+        margin-right: 10px;
+    }
+    .api-token-section input {
+        margin-right: 10px;
+    }
+    .api-token-section button {
+        padding: 8px 15px;
+        font-size: 0.9em;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .api-token-section button:hover {
+        background-color: #0056b3;
+    }
+
+    /* 通用表单行，用于款式名称和价格 */
+    .form-item-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .form-item-row label {
+        margin-right: 10px;
+        /* min-width: 80px; <- 移除此属性，让宽度自适应 */
+        /* text-align: right; <- 移除此属性，让文本左对齐 */
+    }
+    .form-item-row input {
+        width: 100%; /* flex-grow 已经处理宽度，这里可以省略 */
+    }
+
+    /* 标签分组 */
+    .tag-group {
+      margin-bottom: 15px;
+    }
+    .tag-group-header { /* 新增容器，用于标签和新增输入框在同一行 */
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px; /* 标签头和标签列表的间距 */
+    }
+    .tag-group-header label {
+      margin-right: 10px;
+      /* min-width: 80px; <- 移除此属性，让宽度自适应 */
+      /* text-align: right; <- 移除此属性，让文本左对齐 */
+    }
+    .tag-group-header input {
+        width: 100%; /* flex-grow 已经处理宽度 */
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px; /* 标签列表和下一个元素的间距 */
+      min-height: 25px; /* 确保无标签时也有高度 */
+    }
+
+    .tag-item {
+      background-color: #e9ecef;
+      color: #495057;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .tag-item.selected {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    /* 通用按钮样式 */
+    button {
+      background-color: #007bff;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    /* 拖拽区域 */
+    #drop-area {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 15px; /* 上传按钮的间距 */
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+      transition: background-color 0.2s;
+    }
+    #drop-area.drag-over {
+      background-color: #e0e0e0;
+    }
+    #drop-area p {
+        margin: 0;
+        color: #666;
+    }
+    #file-list {
+        margin-top: 10px;
+        font-size: 0.9em;
+        color: #555;
+        max-height: 100px;
+        overflow-y: auto;
+        width: 100%;
+        text-align: left;
+        padding-left: 10px;
+    }
+    #file-list p {
+        margin: 2px 0;
+    }
+
+    /* 状态消息 */
+    #status-message {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none; /* 初始隐藏 */
+    }
+    #status-message.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    #status-message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>服装图片管理后台</h1>
+
+    <div class="api-token-section">
+        <label for="api-token">API Token:</label>
+        <input type="text" id="api-token" placeholder="输入你的 API Token">
+        <button onclick="saveApiToken()">保存</button>
+    </div>
+
+    <div class="form-item-row">
+      <label for="style-name">款式名称:</label>
+      <input type="text" id="style-name" placeholder="例如：新款背心">
+    </div>
+
+    <div class="form-item-row">
+      <label for="price">价格:</label>
+      <input type="number" id="price" placeholder="例如：99">
+    </div>
+
+    <!-- 款式 -->
+    <div class="tag-group">
+      <div class="tag-group-header">
+        <label>款式:</label>
+        <input type="text" id="new-style" placeholder="添加新款式，按回车确认">
+      </div>
+      <div id="style-list" class="tag-list">
+        <!-- 现有款式会动态添加到这里 -->
+      </div>
+    </div>
+
+    <!-- 标签 -->
+    <div class="tag-group">
+      <div class="tag-group-header">
+        <label>标签:</label>
+        <input type="text" id="new-tag" placeholder="添加新标签，按回车确认">
+      </div>
+      <div id="tag-list" class="tag-list">
+        <!-- 现有标签会动态添加到这里 -->
+      </div>
+    </div>
+
+    <!-- 季节 -->
+    <div class="tag-group">
+      <div class="tag-group-header">
+        <label>适用季节:</label>
+        <input type="text" id="new-season" placeholder="添加新季节，按回车确认">
+      </div>
+      <div id="season-list" class="tag-list">
+        <!-- 现有季节会动态添加到这里 -->
+      </div>
+    </div>
+
+    <!-- 场景 -->
+    <div class="tag-group">
+      <div class="tag-group-header">
+        <label>适用场景:</label>
+        <input type="text" id="new-scene" placeholder="添加新场景，按回车确认">
+      </div>
+      <div id="scene-list" class="tag-list">
+        <!-- 现有场景会动态添加到这里 -->
+      </div>
+    </div>
+
+    <!-- "选择图片 (可拖拽)" 标签，本身就是 block 级别，默认内容左对齐 -->
+    <label for="image">选择图片 (可拖拽):</label>
+    <input type="file" id="image" accept="image/*" multiple style="display: none;" onchange="handleFileSelect(this.files)">
+    <div id="drop-area">
+      <p>拖拽图片到这里</p>
+      <p>或点击选择文件</p>
+      <div id="file-list"></div>
+    </div>
+
+    <button id="upload-btn" onclick="uploadImages()">上传图片</button>
+
+    <div id="status-message"></div>
+
+  </div>
+
+  <script>
+    const API_BASE_URL = 'https://img.liyao.sbs';
+    const LOCAL_STORAGE_API_TOKEN_KEY = 'imgbed_api_token';
+
+    let existingStyles = [];
+    let existingTags = [];
+    let existingSeasons = [];
+    let existingScenes = [];
+    
+    let selectedStyles = new Set(); // 使用 Set 存储选中的标签，方便去重和查找
+    let selectedTags = new Set();
+    let selectedSeasons = new Set();
+    let selectedScenes = new Set();
+
+    let filesToUpload = []; // 存储待上传的文件
+    const fileListDiv = document.getElementById('file-list');
+    const uploadButton = document.getElementById('upload-btn');
+
+
+    // ==================== API Token 管理 ====================
+    function loadApiToken() {
+      const storedToken = localStorage.getItem(LOCAL_STORAGE_API_TOKEN_KEY);
+      if (storedToken) {
+        document.getElementById('api-token').value = storedToken;
+        fetchAndPopulateTags(); // 如果有 Token，尝试自动加载标签
+      }
+    }
+
+    function saveApiToken() {
+      const apiToken = document.getElementById('api-token').value;
+      if (apiToken) {
+        localStorage.setItem(LOCAL_STORAGE_API_TOKEN_KEY, apiToken);
+        showStatusMessage('API Token 已保存', 'success');
+        fetchAndPopulateTags(); // 保存后重新加载标签
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_API_TOKEN_KEY); // 清除无效 Token
+        showStatusMessage('API Token 不能为空，已清除保存的 Token', 'error');
+      }
+    }
+
+    // ==================== 动态标签管理 ====================
+
+    // 从图床获取现有标签
+    async function fetchAndPopulateTags() {
+      const apiToken = document.getElementById('api-token').value;
+      if (!apiToken) {
+        // showStatusMessage('请先输入并保存 API Token，才能加载现有标签', 'error');
+        // 不显示错误，因为在页面加载时会尝试加载
+        return;
+      }
+
+      showStatusMessage('正在加载现有标签...', '');
+      const tagFetchStartTime = Date.now();
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/manage/list?dir=服装&count=-1&recursive=false`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({})); // 尝试解析JSON，否则为空对象
+          throw new Error(`加载标签失败，状态码：${response.status}，信息：${errorData.error || errorData.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // 清空现有标签
+        existingStyles = [];
+        existingTags = [];
+        existingSeasons = [];
+        existingScenes = [];
+
+        // 使用Set来收集唯一的标签，避免重复
+        const uniqueStyles = new Set();
+        const uniqueTags = new Set();
+        const uniqueSeasons = new Set();
+        const uniqueScenes = new Set();
+
+        if (data.directories && data.directories.length > 0) {
+          data.directories.forEach(dirPath => {
+            // dirPath 示例: "服装/99-背心_坎袖-造型_简约-夏季-训练-新款背心"
+            const folderName = dirPath.split('/').pop(); // "99-背心_坎袖-造型_简约-夏季-训练-新款背心"
+
+            const parts = folderName.split('-'); // ["99", "背心_坎袖", "造型_简约", "夏季", "训练", "新款背心"]
+            if (parts.length >= 5) { // 至少包含价格、款式、标签、季节、场景、款式名
+              // parts[0] 是价格，parts[5]及以后是款式名，我们主要关心中间的分类
+              const stylesPart = parts[1];
+              const tagsPart = parts[2];
+              const seasonsPart = parts[3];
+              const scenesPart = parts[4];
+
+              stylesPart?.split('_').filter(t => t).forEach(t => uniqueStyles.add(t));
+              tagsPart?.split('_').filter(t => t).forEach(t => uniqueTags.add(t));
+              seasonsPart?.split('_').filter(t => t).forEach(t => uniqueSeasons.add(t));
+              scenesPart?.split('_').filter(t => t).forEach(t => uniqueScenes.add(t));
+            }
+          });
+        }
+        
+        existingStyles = Array.from(uniqueStyles).sort();
+        existingTags = Array.from(uniqueTags).sort();
+        existingSeasons = Array.from(uniqueSeasons).sort();
+        existingScenes = Array.from(uniqueScenes).sort();
+
+        // 重新渲染所有标签列表
+        renderTagList('style-list', existingStyles, selectedStyles, tag => toggleTag(tag, selectedStyles));
+        renderTagList('tag-list', existingTags, selectedTags, tag => toggleTag(tag, selectedTags));
+        renderTagList('season-list', existingSeasons, selectedSeasons, tag => toggleTag(tag, selectedSeasons));
+        renderTagList('scene-list', existingScenes, selectedScenes, tag => toggleTag(tag, selectedScenes));
+
+        const tagFetchTime = Date.now() - tagFetchStartTime;
+        showStatusMessage(`标签加载完成 (${existingStyles.length} 款式, ${existingTags.length} 标签, ${existingSeasons.length} 季节, ${existingScenes.length} 场景)。耗时 ${tagFetchTime}ms`, 'success');
+
+      } catch (error) {
+        console.error('加载标签出错:', error);
+        showStatusMessage(`加载现有标签出错：${error.message}，请检查 API Token 是否正确或网络连接`, 'error');
+      }
+    }
+
+    // 渲染标签列表
+    function renderTagList(tagListId, tagsData, selectedTagsSet, onTagClick) {
+      const tagListDiv = document.getElementById(tagListId);
+      tagListDiv.innerHTML = ''; // 清空
+
+      tagsData.forEach(tag => {
+        const tagItem = document.createElement('div');
+        tagItem.classList.add('tag-item');
+        tagItem.textContent = tag;
+        if (selectedTagsSet.has(tag)) {
+          tagItem.classList.add('selected');
+        }
+
+        tagItem.addEventListener('click', () => {
+          onTagClick(tag);
+          tagItem.classList.toggle('selected', selectedTagsSet.has(tag)); // 根据Set的状态更新class
+        });
+
+        tagListDiv.appendChild(tagItem);
+      });
+    }
+
+    // 添加新标签的处理函数（新增标签自动高亮选中）
+    function addNewTag(tagInputId, tagListId, existingTagsArray, selectedTagsSet) {
+      const newTagInput = document.getElementById(tagInputId);
+      const newTag = newTagInput.value.trim();
+
+      if (newTag) {
+        if (!existingTagsArray.includes(newTag)) { // 如果是新项
+          existingTagsArray.push(newTag); // 添加到现有标签列表
+          existingTagsArray.sort(); // 保持排序
+        }
+        // 确保新添加的或已存在的标签被选中
+        if (!selectedTagsSet.has(newTag)) {
+            selectedTagsSet.add(newTag);
+        }
+        // 重新渲染标签列表
+        renderTagList(tagListId, existingTagsArray, selectedTagsSet, tag => {
+          toggleTag(tag, selectedTagsSet);
+        });
+      }
+      newTagInput.value = ''; // 清空输入框
+    }
+
+    // 切换标签选择状态
+    function toggleTag(tag, selectedTagsSet) {
+      if (selectedTagsSet.has(tag)) {
+        selectedTagsSet.delete(tag); // 取消选择
+      } else {
+        selectedTagsSet.add(tag);    // 选择
+      }
+    }
+
+    // 监听回车键，添加新标签
+    document.getElementById('new-style').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-style', 'style-list', existingStyles, selectedStyles);
+      }
+    });
+    document.getElementById('new-tag').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-tag', 'tag-list', existingTags, selectedTags);
+      }
+    });
+    document.getElementById('new-season').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-season', 'season-list', existingSeasons, selectedSeasons);
+      }
+    });
+    document.getElementById('new-scene').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-scene', 'scene-list', existingScenes, selectedScenes);
+      }
+    });
+
+    // ==================== 文件选择与拖拽 ====================
+
+    // 处理文件选择，添加文件到待上传列表
+    function handleFileSelect(files) {
+      filesToUpload.push(...Array.from(files)); // 将 FileList 转换为数组并合并
+      updateFileListDisplay();
+    }
+
+    // 更新文件列表显示
+    function updateFileListDisplay() {
+        if (filesToUpload.length > 0) {
+            fileListDiv.innerHTML = `<p>已选择 ${filesToUpload.length} 个文件：</p>`;
+            filesToUpload.forEach((file, index) => {
+                const p = document.createElement('p');
+                p.textContent = `${index + 1}. ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                fileListDiv.appendChild(p);
+            });
+            uploadButton.disabled = false; // 有文件时启用上传按钮
+        } else {
+            fileListDiv.innerHTML = '<p>无文件待上传</p>';
+            uploadButton.disabled = true; // 无文件时禁用上传按钮
+        }
+    }
+
+    // 拖拽上传
+    const dropArea = document.getElementById('drop-area');
+
+    dropArea.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      dropArea.classList.add('drag-over');
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    dropArea.addEventListener('dragleave', function (e) {
+      e.preventDefault();
+      dropArea.classList.remove('drag-over');
+    });
+
+    dropArea.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropArea.classList.remove('drag-over');
+      handleFileSelect(e.dataTransfer.files);
+    });
+
+    dropArea.addEventListener('click', function () {
+      document.getElementById('image').click();  // 触发文件选择
+    });
+    // ==================== 批量图片上传 ====================
+
+    // 上传每一张图片
+   async function uploadSingleImage(file, apiToken, styleName, price, styles, tags, seasons, scenes) {
+      const styleStr = Array.from(styles).join('_');
+      const tagStr = Array.from(tags).join('_');
+      const seasonStr = Array.from(seasons).join('_');
+      const sceneStr = Array.from(scenes).join('_');
+
+      // 检查必填项，确保生成的文件夹名不会有问题
+      if (!price || styleStr === '' || tagStr === '' || seasonStr === '' || sceneStr === '' || !styleName) {
+        showStatusMessage(`文件 "${file.name}" 上传失败：请确保所有标签类别至少选中一项，并填写款式名称和价格。`, 'error');
+        return false;
+      }
+
+      const uploadFolder = `服装/${price}-${styleStr}-${tagStr}-${seasonStr}-${sceneStr}-${styleName}`;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        showStatusMessage(`正在上传 "${file.name}"...`, ''); // 显示当前上传文件
+        const response = await fetch(`${API_BASE_URL}/upload?uploadFolder=${encodeURIComponent(uploadFolder)}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}` // 或者 'Authorization': apiToken
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({})); // 尝试解析JSON，否则为空对象
+          throw new Error(`上传 "${file.name}" 失败，状态码：${response.status}，信息：${errorData.error || errorData.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data && data[0] && data[0].src) {
+            showStatusMessage(`"${file.name}" 上传成功！链接片段：${data[0].src}`, 'success');
+            return true;
+        } else {
+          showStatusMessage(`"${file.name}" 上传成功，但未能获取图片链接。响应: ${JSON.stringify(data)}`, 'success');
+          return true; // 认为成功，但信息不完整
+        }
+
+      } catch (error) {
+        console.error(`"${file.name}" 上传出错:`, error);
+        showStatusMessage(`"${file.name}" 上传出错：${error.message}`, 'error');
+        return false;
+      }
+    }
+
+    // 批量上传图片
+    async function uploadImages() {
+      const apiToken = document.getElementById('api-token').value;
+      const styleName = document.getElementById('style-name').value;
+      const price = document.getElementById('price').value;
+
+      if (!apiToken || !styleName || !price || filesToUpload.length === 0) {
+        showStatusMessage('请填写所有必填字段（API Token、款式名称、价格），并选择至少一个文件进行上传', 'error');
+        return;
+      }
+       if (selectedStyles.size === 0 || selectedTags.size === 0 || selectedSeasons.size === 0 || selectedScenes.size === 0) {
+           showStatusMessage('请确保所有标签类别（款式、标签、季节、场景）至少选中一项', 'error');
+           return;
+       }
+
+
+      // 禁用上传按钮和输入
+      uploadButton.disabled = true;
+      uploadButton.textContent = '上传中...';
+      disableInputs(true);
+
+
+      let uploadSuccessCount = 0;
+      let uploadFailCount = 0;
+
+      // 复制一份待上传列表，防止在循环中修改原数组导致问题
+      const currentFilesToUpload = [...filesToUpload];
+      filesToUpload = []; // 清空待上传文件列表
+      updateFileListDisplay(); // 更新显示
+
+      for (const file of currentFilesToUpload) {
+        const success = await uploadSingleImage(file, apiToken, styleName, price, selectedStyles, selectedTags, selectedSeasons, selectedScenes);
+        if (success) {
+          uploadSuccessCount++;
+        } else {
+          uploadFailCount++;
+        }
+      }
+
+      let finalMessage = `所有文件上传完成。成功：${uploadSuccessCount} 个，失败：${uploadFailCount} 个。`;
+      if (uploadFailCount > 0) {
+          showStatusMessage(finalMessage, 'error');
+      } else {
+          showStatusMessage(finalMessage, 'success');
+           // 清空表单字段 (除了API Token) 在所有图片上传成功后
+          document.getElementById('style-name').value = '';
+          document.getElementById('price').value = '';
+          // 清空选中的标签
+          selectedStyles.clear();
+          selectedTags.clear();
+          selectedSeasons.clear();
+          selectedScenes.clear();
+          renderTagList('style-list', existingStyles, selectedStyles, tag => toggleTag(tag, selectedStyles));
+          renderTagList('tag-list', existingTags, selectedTags, tag => toggleTag(tag, selectedTags));
+          renderTagList('season-list', existingSeasons, selectedSeasons, tag => toggleTag(tag, selectedSeasons));
+          renderTagList('scene-list', existingScenes, selectedScenes, tag => toggleTag(tag, selectedScenes));
+      }
+
+      // 重新启用上传按钮和输入
+      uploadButton.disabled = false;
+      uploadButton.textContent = '上传图片';
+      disableInputs(false);
+      // 上传成功后，刷新一次标签列表，以防新建立的文件夹包含了新的标签项
+      fetchAndPopulateTags();
+    }
+
+    // 禁用/启用输入框和选择器
+    function disableInputs(disable) {
+      document.getElementById('api-token').disabled = disable; // API Token 也禁用
+      document.querySelector('.api-token-section button').disabled = disable; // 保存按钮
+      document.getElementById('style-name').disabled = disable;
+      document.getElementById('price').disabled = disable;
+      document.getElementById('new-style').disabled = disable;
+      document.getElementById('new-tag').disabled = disable;
+      document.getElementById('new-season').disabled = disable;
+      document.getElementById('new-scene').disabled = disable;
+      document.getElementById('drop-area').style.pointerEvents = disable ? 'none' : 'auto';
+      document.getElementById('drop-area').style.opacity = disable ? 0.6 : 1;
+
+      // 禁用所有 tag-item 的点击
+      document.querySelectorAll('.tag-item').forEach(item => {
+          item.style.pointerEvents = disable ? 'none' : 'auto';
+          item.style.opacity = disable ? 0.6 : 1;
+      });
+    }
+
+    // ==================== 状态消息显示 ====================
+    function showStatusMessage(message, type) {
+      const statusMessageDiv = document.getElementById('status-message');
+      statusMessageDiv.textContent = message;
+      statusMessageDiv.className = '';  // 清除之前的class
+      if (type) statusMessageDiv.classList.add(type);
+      statusMessageDiv.style.display = 'block';
+    }
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadApiToken(); // 页面加载时尝试读取 API Token
+      updateFileListDisplay(); // 初始显示文件列表为空
+    });
+  </script>
+</body>
+</html>

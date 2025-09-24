@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudFlare ImgBed 服装画廊</title>
+  <style>
+    /* CSS Reset (Simplified) */
+    body, h1, h2, h3, p, ul, li, figure, img {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      font-size: 100%;
+      font: inherit;
+      vertical-align: baseline;
+      box-sizing: border-box; /* 非常重要：让padding和border包含在元素总宽度和高度内 */
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      background-color: #f4f4f4;
+      color: #333;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ul {
+      list-style: none;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    /* General Styles */
+    .container {
+      max-width: 600px; /* 手机端宽度 */
+      margin: 0 auto;
+      padding: 10px 20px; /* 调整内边距 */
+    }
+
+    /* Header */
+    header {
+      background-color: #fff;
+      padding: 10px 0;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header .logo {
+      font-size: 1.8rem; /* 调整字体大小 */
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    /* Navigation - Keep simple for now, can be expanded for categories */
+    nav ul {
+      display: flex;
+      justify-content: center; /* 居中显示 */
+      margin-top: 10px;
+      gap: 20px; /* 增加导航项间距 */
+    }
+
+    nav li a {
+      padding: 5px 12px;
+      border-radius: 5px;
+      transition: background-color 0.2s;
+    }
+    nav li a:hover {
+        background-color: #e9ecef;
+    }
+
+    /* Main Content */
+    main {
+        margin-top: 20px;
+    }
+    h1.gallery-title, h2.gallery-subtitle {
+        color: #2c3e50;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-size: 1.5rem; /* Adjust title size */
+    }
+
+    /* Loading Spinner */
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(0,0,0,.3);
+        border-radius: 50%;
+        border-top-color: #007bff;
+        animation: spin 1s ease-in-out infinite;
+        -webkit-animation: spin 1s ease-in-out infinite;
+        margin-left: 10px;
+        vertical-align: middle;
+        flex-shrink: 0;
+    }
+    @keyframes spin {
+        to { -webkit-transform: rotate(360deg); }
+    }
+    @-webkit-keyframes spin {
+        to { -webkit-transform: rotate(360deg); }
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+      margin-bottom: 15px;
+      font-size: 0.9em;
+      color: #555;
+      background-color: #f0f3f5;
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #e2e6e9;
+    }
+    .breadcrumbs a {
+      color: #007bff;
+      text-decoration: none;
+      margin: 0 3px;
+    }
+    .breadcrumbs a:hover {
+      text-decoration: underline;
+    }
+    .breadcrumbs span:last-child {
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* Action Buttons (Refresh) */
+    .action-buttons {
+        margin-bottom: 20px;
+    }
+    .action-buttons button {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.2s, transform 0.1s;
+    }
+    .action-buttons button:hover {
+        background-color: #5a6268;
+        transform: translateY(-1px);
+    }
+    .action-buttons button:active {
+        transform: translateY(0);
+    }
+
+    /* Products Grid */
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(45%, 1fr)); /* 移动端双排 */
+      gap: 10px; /* 间距 */
+    }
+
+    .product-card {
+      background-color: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease-in-out;
+      cursor: pointer; /* Indicates clickable */
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+    }
+
+    /* !!! 主要修改区域 !!! */
+    /* 使用 aspect-ratio 替代 height: 0 和 padding-bottom */
+    .product-card img {
+      width: 100%;
+      height: auto; /* 允许高度自适应，由 aspect-ratio 控制 */
+      aspect-ratio: 3 / 4; /* 维持 3:4 的宽高比 */
+      object-fit: cover; /* 保持图片比例，裁剪填充 */
+      object-position: center; /* 保证图片居中显示,避免裁剪失真*/
+    }
+
+    .product-card .card-content {
+        padding: 10px;
+    }
+
+    .product-card h3 { /* Renamed h2 to h3 for semantic structure */
+      font-size: 1.1rem;
+      margin: 0 0 5px 0;
+      color: #2c3e50;
+      display: -webkit-box;
+      -webkit-line-clamp: 2; /* Limit title to 2 lines */
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-card p.price {
+      margin: 0;
+      color: #e74c3c;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .product-card p.category-name { /* For category-type folders */
+      margin: 0;
+      color: #3498db;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    /* Fallback folder icon for categories without preview or non-product folders */
+    /* 也使用 aspect-ratio 保持一致的尺寸 */
+    .product-card .folder-icon { /* This is the div that contains the Font Awesome icon */
+        width: 100%;
+        height: auto; /* 允许高度自适应，由 aspect-ratio 控制 */
+        aspect-ratio: 3 / 4; /* 维持 3:4 的宽高比 */
+        display: flex; /* Keep for centering icon */
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
+        color: #f0c33a;
+        border-bottom: 1px solid #eee;
+        background-color: #f9f9f9;
+    }
+
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none; /* 初始隐藏 */
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px); /* Add blur effect */
+    }
+
+    .modal.active { /* Use .active class to show modal */
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 90%;
+      max-height: 90%;
+      overflow-y: auto; /* Allow scrolling for content longer than viewport */
+      position: relative;
+      animation: fadeIn 0.3s ease-out; /* Add fade-in animation */
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-gallery-item {
+        margin-bottom: 15px; /* Spacing between modal images */
+        border: 1px solid #eee;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .modal-gallery-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .modal-gallery-item .copy-button { /* Copy button for modal images */
+        display: block;
+        width: 100%;
+        padding: 8px 0;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.2s;
+    }
+    .modal-gallery-item .copy-button:hover {
+        background-color: #0056b3;
+    }
+
+    .modal-content h2 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+    .modal-content .product-details p {
+        margin-bottom: 5px;
+        color: #555;
+    }
+    .modal-content .product-details p strong {
+        color: #333;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 2rem; /* Larger close button */
+      color: #888;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover {
+      color: #333;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 20px 0;
+      background-color: #ddd;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+    .no-content-message {
+        text-align: center;
+        color: #888;
+        padding: 40px;
+        font-size: 1.1em;
+        grid-column: 1 / -1; /* Make message span all columns */
+    }
+
+    /* Media Queries */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 960px; /* Tablet width */
+      }
+
+      .products {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Tablet and above */
+      }
+    }
+
+    @media (min-width: 992px) {
+      .container {
+        max-width: 1200px; /* Desktop width */
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo"><a href="#" onclick="loadImages('服装'); return false;">CloudFlare ImgBed 服装画廊</a></div>
+      <nav>
+        <ul>
+          <li><a href="#" onclick="loadImages('服装/上装'); return false;">上装</a></li>
+          <li><a href="#" onclick="loadImages('服装/下装'); return false;">下装</a></li>
+          <li><a href="#" onclick="loadImages('服装/配件'); return false;">配件</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <h1 class="gallery-title">商品列表 <span id="galleryLoading" class="loading hidden"></span></h1>
+      <div class="breadcrumbs" id="breadcrumbs">
+          <!-- Breadcrumbs will be inserted here by JavaScript -->
+      </div>
+      <div class="action-buttons">
+          <button onclick="loadImages(currentDirPath)">刷新当前目录</button>
+      </div>
+      <section class="products" id="productsGrid">
+          <p class="no-content-message" id="noContentMessage">加载中...</p>
+      </section>
+
+      <!-- 通用商品详情模态框 -->
+      <div id="productModal" class="modal">
+        <div class="modal-content">
+          <a href="#" class="modal-close" onclick="closeProductModal(); return false;">&times;</a>
+          <div id="modalGallery">
+            <!-- 动态加载商品图片 -->
+          </div>
+          <div class="product-details">
+            <h2 id="modalProductName"></h2>
+            <p><strong id="modalProductPrice"></strong></p>
+            <p><strong id="modalProductStyles"></strong></p>
+            <p><strong id="modalProductTags"></strong></p>
+            <p><strong id="modalProductSeasons"></strong></p>
+            <p><strong id="modalProductScenes"></strong></p>
+            <p id="modalProductDescription"></p> <!-- For additional description if needed -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p>© 2023 CloudFlare ImgBed 服装画廊</p>
+    </footer>
+  </div>
+
+  <script>
+    const BASE_URL = 'https://img.liyao.sbs';
+    const FILE_ENDPOINT = '/file/';
+    const API_TOKEN = 'imgbed_5pv5JE1P2Z4ZnYDicuZzsHzBfMlzy2rz';
+
+    let currentDirPath = ''; // 追踪当前所在的目录路径
+    const productsGrid = document.getElementById('productsGrid');
+    const noContentMessage = document.getElementById('noContentMessage');
+    const breadcrumbsDiv = document.getElementById('breadcrumbs');
+    const galleryLoadingSpinner = document.getElementById('galleryLoading');
+
+    // Modal elements
+    const productModal = document.getElementById('productModal');
+    const modalGallery = document.getElementById('modalGallery');
+    const modalProductName = document.getElementById('modalProductName');
+    const modalProductPrice = document.getElementById('modalProductPrice');
+    const modalProductStyles = document.getElementById('modalProductStyles');
+    const modalProductTags = document.getElementById('modalProductTags');
+    const modalProductSeasons = document.getElementById('modalProductSeasons');
+    const modalProductScenes = document.getElementById('modalProductScenes');
+    const modalProductDescription = document.getElementById('modalProductDescription');
+
+
+    // --- 通用函数 ---
+
+    /**
+     * 将指定文本复制到剪贴板。
+     * @param {string} text - 要复制的文本。
+     */
+    function copyTextToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('链接已复制到剪贴板！');
+        }).catch(err => {
+            console.error('复制失败:', err);
+            alert('复制失败！请手动复制：' + text);
+        });
+    }
+
+    /**
+     * 处理 API 响应错误并返回格式化的错误信息。
+     * @param {Response} response - 原始的 fetch 响应对象。
+     * @returns {string} 格式化的错误信息。
+     */
+    async function handleApiError(response) {
+        let errorMsg = `HTTP Error! Status: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorMsg += `\n消息: ${errorData.message || '无详细消息'}\n错误: ${errorData.error || '无详细错误'}`;
+        } catch (e) {
+            errorMsg += `\n无法解析错误响应体: ${e.message}`;
+        }
+        return errorMsg;
+    }
+
+    // 页面加载时，默认加载“服装”目录
+    document.addEventListener('DOMContentLoaded', () => {
+        loadImages('服装');
+    });
+
+    // --- 文件夹名解析函数 ---
+
+    /**
+     * 解析符合命名规则的文件夹名。
+     * 规则: {价格}-{款式_款式2}-{标签_标签2}-{季节_季节2}-{场景_场景2}-{款式名称}
+     * @param {string} folderName - 文件夹名称。
+     * @returns {Object|null} 解析后的对象，如果格式不匹配则返回 null。
+     */
+    function parseFolderName(folderName) {
+        const parts = folderName.split('-');
+
+        // 至少应有6个部分
+        if (parts.length < 6) { 
+            return null;
+        }
+
+        const price = parts[0];
+        const styles = parts[1].split('_');
+        const tags = parts[2].split('_');
+        const seasons = parts[3].split('_');
+        const scenes = parts[4].split('_');
+        const name = parts.slice(5).join('-'); // 款式名称可能是多个部分由'-'连接的
+
+        // 简单的验证，比如价格必须是数字
+        if (isNaN(parseInt(price))) {
+            return null;
+        }
+
+        return {
+            price: `¥${price}`,
+            styles: styles.filter(s => s),
+            tags: tags.filter(s => s),
+            seasons: seasons.filter(s => s),
+            scenes: scenes.filter(s => s),
+            name: name
+        };
+    }
+
+    // --- API 请求辅助函数 ---
+
+    /**
+     * 从指定目录获取第一个文件的 URL。
+     * @param {string} dirPath - 要查询的目录路径。
+     * @returns {Promise<string|null>} 目录中第一个文件的完整 URL，如果不存在则返回 null。
+     */
+    async function fetchFirstImageInDirectory(dirPath) {
+        const queryParams = new URLSearchParams();
+        queryParams.append('count', '1'); // 只请求一个文件
+        queryParams.append('dir', dirPath);
+
+        const url = `${BASE_URL}/api/manage/list?${queryParams.toString()}`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${API_TOKEN}`
+                }
+            });
+
+            if (!response.ok) {
+                // 记录错误但继续，回退到通用文件夹图标
+                console.error(`Failed to fetch first image for directory ${dirPath}:`, await handleApiError(response));
+                return null;
+            }
+
+            const data = await response.json();
+            if (data.files && data.files.length > 0) {
+                return `${BASE_URL}${FILE_ENDPOINT}${data.files[0].name}`;
+            }
+            return null; // 此目录中没有文件
+        } catch (error) {
+            console.error(`Network error fetching first image for directory ${dirPath}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * 从指定目录获取所有文件信息。
+     * @param {string} dirPath - 要查询的目录路径。
+     * @returns {Promise<Array<Object>>} 目录中所有文件的数组，如果失败则返回空数组。
+     */
+    async function fetchAllImagesInDirectory(dirPath) {
+        const queryParams = new URLSearchParams();
+        queryParams.append('count', '-1'); // 请求所有文件
+        queryParams.append('dir', dirPath);
+
+        const url = `${BASE_URL}/api/manage/list?${queryParams.toString()}`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${API_TOKEN}`
+                }
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to fetch all images for directory ${dirPath}:`, await handleApiError(response));
+                return [];
+            }
+
+            const data = await response.json();
+            return (data.files || []).filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)); // 过滤非图片文件
+        } catch (error) {
+            console.error(`Network error fetching all images for directory ${dirPath}:`, error);
+            return [];
+        }
+    }
+
+    // --- UI 渲染函数 ---
+
+    /**
+     * 更新面包屑导航。
+     */
+    function updateBreadcrumbs() {
+        breadcrumbsDiv.innerHTML = '';
+        let pathSegments = currentDirPath.split('/').filter(s => s !== '');
+      
+        // 根目录链接
+        const rootLink = document.createElement('a');
+        rootLink.href = '#';
+        rootLink.textContent = '根目录';
+        rootLink.onclick = (event) => {
+            event.preventDefault();
+            loadImages(''); // 导航到根目录
+        };
+        breadcrumbsDiv.appendChild(rootLink);
+
+        let currentPathAccumulated = '';
+        pathSegments.forEach((segment, index) => {
+            currentPathAccumulated += (currentPathAccumulated ? '/' : '') + segment;
+            breadcrumbsDiv.appendChild(document.createTextNode(' / '));
+            
+            const linkText = segment; 
+            if (index < pathSegments.length - 1) { // 不是最后一个片段（即当前目录）
+                const link = document.createElement('a');
+                link.href = '#';
+                link.textContent = linkText;
+                const pathToGo = currentPathAccumulated; // 捕获当前状态
+                link.onclick = (event) => {
+                    event.preventDefault();
+                    loadImages(pathToGo);
+                };
+                breadcrumbsDiv.appendChild(link);
+            } else { // 最后一个片段（当前活动目录）
+                const span = document.createElement('span');
+                span.textContent = linkText;
+                breadcrumbsDiv.appendChild(span);
+            }
+        });
+    }
+
+    /**
+     * 创建一个商品卡片（目录或分类）。
+     * @param {Object} itemData - 包含解析后商品信息的对象，如果是非商品目录则为null。
+     * @param {string} fullDirPath - 目录的完整路径。
+     * @param {string|null} previewImageUrl - 预览图片的URL。
+     * @param {boolean} isProduct - 是否是商品（即符合命名规则）。
+     * @returns {HTMLElement} 商品卡片元素。
+     */
+    function createProductCard(itemData, fullDirPath, previewImageUrl, isProduct) {
+        const article = document.createElement('article');
+        article.classList.add('product-card');
+        
+        // 使用匿名函数包装点击事件，区分是打开 Modal 还是导航
+        article.onclick = () => {
+            if (isProduct) {
+                openProductModal(fullDirPath, itemData);
+            } else {
+                loadImages(fullDirPath); // 导航到分类目录
+            }
+        };
+
+        if (previewImageUrl) {
+            const img = document.createElement('img');
+            img.src = previewImageUrl;
+            img.alt = itemData ? itemData.name : fullDirPath.split('/').pop();
+            img.loading = 'lazy';
+            article.appendChild(img);
+        } else {
+            const folderIcon = document.createElement('div');
+            folderIcon.classList.add('folder-icon');
+            const iconElement = document.createElement('i');
+            iconElement.classList.add('fas', 'fa-folder');
+            folderIcon.appendChild(iconElement);
+            article.appendChild(folderIcon);
+        }
+
+        const cardContent = document.createElement('div');
+        cardContent.classList.add('card-content');
+        article.appendChild(cardContent);
+
+        const h3 = document.createElement('h3');
+        h3.textContent = itemData ? itemData.name : fullDirPath.split('/').pop(); // 优先显示解析出的name，否则显示目录名
+        cardContent.appendChild(h3);
+
+        const p = document.createElement('p');
+        if (isProduct && itemData && itemData.price) {
+            p.classList.add('price');
+            p.textContent = itemData.price;
+        } else {
+            p.classList.add('category-name');
+            p.textContent = '查看分类'; // 非商品目录显示“查看分类”
+        }
+        cardContent.appendChild(p);
+        
+        return article;
+    }
+
+    /**
+     * 打开商品详情模态框。
+     * @param {string} productPath - 商品（文件夹）的完整路径。
+     * @param {Object} parsedData - 已经解析好的商品数据。
+     */
+    async function openProductModal(productPath, parsedData) {
+        // 清空旧内容
+        modalGallery.innerHTML = '';
+        modalProductName.textContent = '加载中...';
+        modalProductPrice.textContent = '';
+        modalProductStyles.textContent = '';
+        modalProductTags.textContent = '';
+        modalProductSeasons.textContent = '';
+        modalProductScenes.textContent = '';
+        modalProductDescription.textContent = '';
+
+        // 显示模态框
+        productModal.classList.add('active');
+
+        // 填充商品详情
+        modalProductName.textContent = parsedData.name;
+        modalProductPrice.textContent = `价格: ${parsedData.price}`;
+        modalProductStyles.textContent = `款式: ${parsedData.styles.length > 0 ? parsedData.styles.join(', ') : '无'}`;
+        modalProductTags.textContent = `标签: ${parsedData.tags.length > 0 ? parsedData.tags.join(', ') : '无'}`;
+        modalProductSeasons.textContent = `季节: ${parsedData.seasons.length > 0 ? parsedData.seasons.join(', ') : '无'}`;
+        modalProductScenes.textContent = `场景: ${parsedData.scenes.length > 0 ? parsedData.scenes.join(', ') : '无'}`;
+        // modalProductDescription.textContent = '此处可添加更详细的商品描述。'; // 如果后端有提供更多描述可添加
+
+        // 获取并显示所有图片
+        const files = await fetchAllImagesInDirectory(productPath);
+        if (files.length > 0) {
+            files.forEach(file => {
+                const fullImageUrl = `${BASE_URL}${FILE_ENDPOINT}${file.name}`;
+                const galleryItem = document.createElement('div');
+                galleryItem.classList.add('modal-gallery-item');
+
+                const img = document.createElement('img');
+                img.src = fullImageUrl;
+                img.alt = file.name.split('/').pop(); // 显示文件名
+                img.loading = 'lazy';
+                galleryItem.appendChild(img);
+
+                const copyButton = document.createElement('button');
+                copyButton.classList.add('copy-button');
+                copyButton.textContent = '复制图片链接';
+                copyButton.onclick = () => copyTextToClipboard(fullImageUrl);
+                galleryItem.appendChild(copyButton);
+
+                modalGallery.appendChild(galleryItem);
+            });
+        } else {
+            const p = document.createElement('p');
+            p.textContent = '此商品暂无图片。';
+            modalGallery.appendChild(p);
+        }
+    }
+
+    /**
+     * 关闭商品详情模态框。
+     */
+    function closeProductModal() {
+        productModal.classList.remove('active');
+        // Clear gallery content for next open
+        modalGallery.innerHTML = '';
+    }
+
+    /**
+     * 从 API 获取文件列表和文件夹并显示。
+     * @param {string} path - 要加载的目录路径（空字符串表示根目录）。
+     */
+    async function loadImages(path = '') {
+        currentDirPath = path.replace(/^\/|\/$/g, ''); // 清理路径（移除开头/结尾斜杠）
+
+        productsGrid.innerHTML = ''; // 清空现有内容
+        noContentMessage.classList.remove('hidden'); // 默认显示无内容信息
+        galleryLoadingSpinner.classList.remove('hidden'); // 显示加载状态
+        noContentMessage.textContent = '加载中...';
+
+        // 设置导航条标题
+        document.querySelector('.gallery-title').firstChild.nodeValue = `商品列表 (${currentDirPath || '根目录'})`;
+
+        const queryParams = new URLSearchParams();
+        queryParams.append('count', '-1'); // 获取所有文件和目录
+        if (currentDirPath) {
+            queryParams.append('dir', currentDirPath);
+        }
+
+        const url = `${BASE_URL}/api/manage/list?${queryParams.toString()}`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${API_TOKEN}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorMsg = await handleApiError(response);
+                noContentMessage.textContent = `加载内容失败: ${errorMsg}`;
+                return;
+            }
+
+            const data = await response.json();
+          
+            let hasContent = false;
+            const itemsToRender = [];
+
+            // --- 处理文件夹 (主显示为商品卡片或分类卡片) ---
+            if (data.directories && data.directories.length > 0) {
+                const directoryPromises = data.directories.map(async (dirPath) => {
+                    const dirName = dirPath.split('/').pop();
+                    const parsedData = parseFolderName(dirName);
+                    const isProductFolder = parsedData !== null;
+                    const previewImageUrl = await fetchFirstImageInDirectory(dirPath); // 获取预览图片
+                    return { dirPath, dirName, parsedData, isProductFolder, previewImageUrl };
+                });
+                
+                const directoryResults = await Promise.all(directoryPromises);
+                itemsToRender.push(...directoryResults);
+                hasContent = hasContent || directoryResults.length > 0;
+            }
+
+            // --- 处理文件 (如果当前目录是产品目录本身，且该目录没有子目录，可能会将文件直接显示为商品卡片，
+            //     但根据需求，文件应该在模态框中展示，所以这里不直接渲染文件为商品卡片)
+            // if (data.files && data.files.length > 0) {
+            //     // 可以在这里根据情况决定是否将文件也显示为产品卡片
+            // }
+
+            // 排序并渲染所有卡片
+            if (itemsToRender.length > 0) {
+                itemsToRender.sort((a, b) => a.dirName.localeCompare(b.dirName)).forEach(item => {
+                    productsGrid.appendChild(createProductCard(item.parsedData, item.dirPath, item.previewImageUrl, item.isProductFolder));
+                });
+                noContentMessage.classList.add('hidden');
+            } else if (!hasContent) {
+                noContentMessage.textContent = '此目录暂无内容。';
+            }
+
+        } catch (error) {
+            noContentMessage.textContent = `网络请求失败: ${error.message}`;
+            console.error('List API Error:', error);
+        } finally {
+            galleryLoadingSpinner.classList.add('hidden'); // 隐藏加载状态
+            updateBreadcrumbs(); // 更新面包屑导航
+        }
+    }
+  </script>
+</body>
+</html>
