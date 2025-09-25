@@ -21,10 +21,11 @@
     const fileListDiv = document.getElementById('file-list');
     const uploadButton = document.getElementById('upload-btn');
     const statusMessageDiv = document.getElementById('status-message');
-    // 移除 adminSelectionStatus 和 adminSelectionMessage 的 DOM 引用，因为它们已被移除或隐藏
-    // const adminSelectionStatus = document.getElementById('admin-selection-status'); // 已移除
-    // const adminSelectionMessage = document.getElementById('admin-selection-message'); // 已移除
     const clearAdminSelectionBtn = document.getElementById('clear-admin-selection-btn'); // 按钮仍然存在，只是位置改变
+
+    // 新增：已选择图片缩略图显示区域的 DOM 引用
+    const selectedImagesGrid = document.getElementById('selected-images-grid');
+    const noSelectedImagesMessage = document.getElementById('no-selected-images-message');
 
     // ==================== 全局状态变量 ====================
     let allProducts = [];
@@ -54,7 +55,8 @@
         scenes: []
     };
 
-    let filesToUpload = [];
+    let filesToUpload = []; // 存储待上传的文件对象
+    let selectedFilePreviews = []; // 存储已选择文件的预览信息 { file: File, previewUrl: string }
 
 
     // ==================== 数据获取与解析 ====================
@@ -292,7 +294,9 @@
         }
         
         filesToUpload = []; // 清空待上传文件列表
+        selectedFilePreviews = []; // 清空已选择文件预览列表
         updateFileListDisplay(); // 更新文件列表显示并相应地禁用/启用上传按钮
+        renderSelectedFilePreviews(); // 重新渲染已选择图片预览区域
         
         // 渲染管理区域的标签为 "创建/编辑模式" (可交互)
         renderAdminTagsInCreateMode();
@@ -382,19 +386,64 @@
     }
     
     function handleFileSelect(files) {
-      filesToUpload.push(...Array.from(files));
-      updateFileListDisplay();
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          selectedFilePreviews.push({ file: file, previewUrl: e.target.result });
+          renderSelectedFilePreviews();
+        };
+        reader.readAsDataURL(file);
+        filesToUpload.push(file); // 仍然将文件添加到 filesToUpload 数组用于上传
+      });
+      updateFileListDisplay(); // 更新文件列表显示
     }
+
     function updateFileListDisplay() {
         fileListDiv.innerHTML = filesToUpload.length > 0 
             ? `<p>已选择 ${filesToUpload.length} 个文件:</p>` + filesToUpload.map(f => `<p>${f.name}</p>`).join('')
             : '<p>无文件待上传</p>';
         uploadButton.disabled = filesToUpload.length === 0; // 上传按钮只在有文件时启用
     }
+
+    function renderSelectedFilePreviews() {
+      selectedImagesGrid.innerHTML = '';
+      if (selectedFilePreviews.length === 0) {
+        noSelectedImagesMessage.style.display = 'block';
+      } else {
+        noSelectedImagesMessage.style.display = 'none';
+        selectedFilePreviews.forEach((item, index) => {
+          const imgItem = document.createElement('div');
+          imgItem.className = 'selected-image-item';
+          imgItem.innerHTML = `
+            <img src="${item.previewUrl}" alt="${item.file.name}" loading="lazy">
+            <button class="remove-image-btn" data-index="${index}" title="移除此图片">×</button>
+          `;
+          selectedImagesGrid.appendChild(imgItem);
+        });
+      }
+    }
+
     dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag-over'); });
     dropArea.addEventListener('dragleave', e => { e.preventDefault(); dropArea.classList.remove('drag-over'); });
     dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.classList.remove('drag-over'); handleFileSelect(e.dataTransfer.files); });
     dropArea.addEventListener('click', () => document.getElementById('image').click());
+
+    // 为已选择图片区域的删除按钮添加事件监听器（利用事件委托）
+    selectedImagesGrid.addEventListener('click', (e) => {
+      const removeButton = e.target.closest('.remove-image-btn');
+      if (removeButton) {
+        const indexToRemove = parseInt(removeButton.dataset.index);
+        if (!isNaN(indexToRemove)) {
+          // 移除 filesToUpload 中的文件
+          filesToUpload.splice(indexToRemove, 1);
+          // 移除 selectedFilePreviews 中的预览信息
+          selectedFilePreviews.splice(indexToRemove, 1);
+          // 重新渲染文件列表和预览区域
+          updateFileListDisplay();
+          renderSelectedFilePreviews();
+        }
+      }
+    });
 
     async function uploadImages() {
         const apiToken = getApiToken();
@@ -438,7 +487,9 @@
         showStatusMessage(finalMessage, failCount > 0 ? 'error' : 'success');
         
         filesToUpload = []; // 清空待上传文件列表
+        selectedFilePreviews = []; // 清空已选择文件预览列表
         updateFileListDisplay(); // 更新显示，上传按钮会再次禁用
+        renderSelectedFilePreviews(); // 重新渲染已选择图片预览区域
         uploadButton.textContent = '上传图片';
 
         // 刷新画廊以显示新上传的图片或商品
