@@ -69,7 +69,7 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
-      align-items: center; /* 垂直居中内容 */
+      align-items: flex-start; /* 内容从左上角开始 */
       justify-content: flex-start; /* 内容从顶部开始 */
       position: relative; /* 用于定位详情内容 */
     }
@@ -82,11 +82,13 @@
         overflow-y: auto;
         padding: 10px;
         display: none; /* 初始隐藏 */
+        margin: 0 auto; /* 居中显示 */
     }
     .detail-column .product-detail-content.active {
         display: block; /* 选中时显示 */
     }
     .detail-column .placeholder-message {
+        width: 100%; /* 确保占位符也居中 */
         text-align: center;
         color: #888;
         padding: 20px;
@@ -199,6 +201,12 @@
     .product-card:hover {
       transform: translateY(-5px);
     }
+    .product-card > a { /* 使整个卡片可点击 */
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
 
     .product-card img {
       width: 100%;
@@ -221,6 +229,7 @@
         justify-content: space-between;
         align-items: baseline;
         margin-bottom: 5px;
+        flex-wrap: wrap;
     }
 
     .product-name-price h2 {
@@ -234,20 +243,22 @@
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
+      order: 2; /* 名称在第二个 */
     }
-
     .product-name-price .price {
       font-size: 1.1rem;
       font-weight: bold;
       color: #e64a19;
       margin-right: 10px;
       flex-shrink: 0;
+      order: 1; /* 价格在第一个 */
     }
 
     .product-tags, .product-season {
         font-size: 0.65rem;
         color: #777;
         margin-bottom: 3px;
+        line-height: 1.2;
     }
     
     .product-tags span, .product-season span {
@@ -343,23 +354,6 @@
       width: 100%;
       height: auto;
     }
-
-    .product-detail-content .modal-header {
-      margin-bottom: 10px;
-      padding-top: 10px;
-    }
-    .product-detail-content .modal-header h3 {
-        font-size: 1.4rem;
-        font-weight: bold;
-        color: #333;
-    }
-    .product-detail-content .modal-price {
-        font-size: 1.3rem;
-        font-weight: bold;
-        color: #e64a19;
-        margin-top: 5px;
-        margin-bottom: 10px;
-    }
     .product-detail-content .modal-description {
         font-size: 0.95rem;
         color: #555;
@@ -424,7 +418,7 @@
     .admin-column label {
       font-weight: bold;
       flex-shrink: 0;
-      margin-bottom: 0;
+      margin-bottom: 0px;
       white-space: nowrap;
       text-align: left !important;
     }
@@ -436,6 +430,15 @@
       box-sizing: border-box;
       flex-grow: 1;
       margin-bottom: 0;
+    }
+    /* 禁用状态的输入框样式 */
+    .admin-column input:disabled {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+    }
+    .admin-column button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
     }
 
     /* API Token 部分 */
@@ -460,7 +463,7 @@
         cursor: pointer;
         flex-shrink: 0;
     }
-    .admin-column .api-token-section button:hover {
+    .admin-column .api-token-section button:hover:not(:disabled) {
         background-color: #0056b3;
     }
 
@@ -499,6 +502,9 @@
       gap: 5px;
       margin-bottom: 10px;
       min-height: 25px;
+      border: 1px solid #eee;
+      padding: 5px;
+      border-radius: 4px;
     }
 
     .admin-column .tag-item {
@@ -508,31 +514,28 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.9rem;
-      transition: background-color 0.2s, color 0.2s;
+      transition: background-color 0.2s, color 0.2s, opacity 0.2s;
     }
 
     .admin-column .tag-item.selected {
       background-color: #007bff;
       color: #fff;
     }
+    /* 禁用状态的标签 */
+    .admin-column .tag-item.disabled {
+        pointer-events: none;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 
     /* 通用按钮样式 */
-    .admin-column button {
-      background-color: #007bff;
-      color: #fff;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+    .admin-column #upload-btn {
+      width: 100%; /* 让上传按钮更显眼 */
+      background-color: #28a745;
+      padding: 12px 20px;
     }
-
-    .admin-column button:hover {
-      background-color: #0056b3;
-    }
-
-    .admin-column button:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
+    .admin-column #upload-btn:hover:not(:disabled) {
+      background-color: #218838;
     }
 
     /* 拖拽区域 */
@@ -541,17 +544,18 @@
       padding: 20px;
       text-align: center;
       cursor: pointer;
-      margin-bottom: 15px;
+      margin: 10px 0 15px 0;
       min-height: 80px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background-color: #fff;
+      background-color: #f8f9fa;
       transition: background-color 0.2s;
     }
     .admin-column #drop-area.drag-over {
       background-color: #e0e0e0;
+      border-color: #007bff;
     }
     .admin-column #drop-area p {
         margin: 0;
@@ -587,6 +591,37 @@
       background-color: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
+    }
+
+    /* Admin Selection Status */
+    #admin-selection-status {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px dashed #aed6f1; /* 轻蓝色边框 */
+        border-radius: 5px;
+        background-color: #e8f5fd; /* 轻蓝色背景 */
+        font-size: 0.95em;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* 居中内容 */
+        text-align: center;
+    }
+    #admin-selection-status p {
+        margin-bottom: 10px;
+        line-height: 1.4;
+    }
+    #admin-selection-status button {
+        background-color: #dc3545; /* 红色按钮 */
+        color: #fff;
+        padding: 8px 15px;
+        font-size: 0.9em;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    #admin-selection-status button:hover:not(:disabled) {
+        background-color: #c82333;
     }
 
     /* 媒体查询 */
@@ -645,6 +680,12 @@
     <div class="admin-column">
       <div class="admin-container">
         <h1>服装图片管理后台</h1>
+
+        <!-- 管理后台顶部区域：显示当前选择或提示 -->
+        <div id="admin-selection-status">
+            <p id="admin-selection-message">点击左侧商品选择，上传新图片到该商品；或输入信息创建新商品。</p>
+            <button id="clear-admin-selection-btn" style="display: none;">取消选择</button>
+        </div>
 
         <!-- API Token 管理区域 -->
         <div class="api-token-section">
@@ -712,13 +753,12 @@
         <label for="image">选择图片 (可拖拽):</label>
         <input type="file" id="image" accept="image/*" multiple style="display: none;" onchange="handleFileSelect(this.files)">
         <div id="drop-area">
-          <p>拖拽图片到这里</p>
-          <p>或点击选择文件</p>
+          <p id="drop-area-message">拖拽图片到这里或点击选择文件</p>
           <div id="file-list"></div>
         </div>
 
         <!-- 上传按钮 -->
-        <button id="upload-btn" onclick="uploadImages()">上传图片</button>
+        <button id="upload-btn">上传图片</button>
 
         <!-- 状态消息显示区域 -->
         <div id="status-message"></div>
@@ -734,18 +774,16 @@
   <script>
     // ==================== 全局常量和 DOM 元素引用 ====================
     const API_BASE_URL = 'https://img.liyao.sbs';
-    const API_TOKEN_KEY = 'imgbed_api_token'; // 用于 localStorage 的 key
+    const API_TOKEN_KEY = 'imgbed_api_token';
 
-    // Gallery 页面相关 DOM 元素
+    // DOM 元素引用...
     const productsList = document.getElementById('products-list');
     const noProductsMessage = document.getElementById('no-products-message');
     const detailView = document.getElementById('product-detail-view');
     const detailPlaceholder = document.getElementById('detail-placeholder');
     const loadingOverlay = document.getElementById('loading-overlay');
-
-    // Admin 页面相关 DOM 元素
     const apiTokenInput = document.getElementById('api-token');
-    const apiTokenSaveButton = document.querySelector('.api-token-section button');
+    const apiTokenSaveButton = document.getElementById('save-api-token-btn');
     const styleNameInput = document.getElementById('style-name');
     const priceInput = document.getElementById('price');
     const newStyleInput = document.getElementById('new-style');
@@ -753,43 +791,54 @@
     const newSeasonInput = document.getElementById('new-season');
     const newSceneInput = document.getElementById('new-scene');
     const dropArea = document.getElementById('drop-area');
+    const dropAreaMessage = document.getElementById('drop-area-message'); // 新增 DOM 引用
     const fileListDiv = document.getElementById('file-list');
     const uploadButton = document.getElementById('upload-btn');
     const statusMessageDiv = document.getElementById('status-message');
+    const adminSelectionStatus = document.getElementById('admin-selection-status');
+    const adminSelectionMessage = document.getElementById('admin-selection-message');
+    const clearAdminSelectionBtn = document.getElementById('clear-admin-selection-btn');
 
     // ==================== 全局状态变量 ====================
-    let allProducts = []; // 存储所有服装商品数据
-    let activeFilters = { // 当前激活的筛选器
+    let allProducts = [];
+    let currentSelectedProductForAdmin = null; // 存储当前在管理后台选中的商品对象
+    
+    // 用于画廊筛选
+    let activeFilters = { 
         style: new Set(),
         tag: new Set(),
         season: new Set(),
         scene: new Set()
     };
-
-    // Admin 页面动态标签数据
-    let existingStyles = [];
-    let existingTags = [];
-    let existingSeasons = [];
-    let existingScenes = [];
     
-    let selectedStyles = new Set();
-    let selectedTags = new Set();
-    let selectedSeasons = new Set();
-    let selectedScenes = new Set();
+    // 用于 "创建新商品" 模式下存储用户选择
+    let createModeSelectedTags = {
+        styles: new Set(),
+        tags: new Set(),
+        seasons: new Set(),
+        scenes: new Set()
+    };
+    
+    // 存储从所有商品中收集到的所有可能的标签值
+    let allPossibleTags = {
+        styles: [],
+        tags: [],
+        seasons: [],
+        scenes: []
+    };
 
-    let filesToUpload = []; // 待上传文件列表
+    let filesToUpload = [];
 
 
-    // ==================== 数据获取与解析 (Gallery) ====================
-
-    /**
-     * 从 API 获取所有商品数据并进行处理。
-     */
+    // ==================== 数据获取与解析 ====================
     async function fetchAllProducts() {
         showLoading();
         try {
+            const apiToken = localStorage.getItem(API_TOKEN_KEY);
+            if (!apiToken) throw new Error("API Token 未设置。请在管理后台输入并保存。");
+            
             const response = await fetch(`${API_BASE_URL}/api/manage/list?dir=服装&count=-1&recursive=true`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem(API_TOKEN_KEY)}` }
+                headers: { 'Authorization': `Bearer ${apiToken}` }
             });
 
             if (!response.ok) {
@@ -801,22 +850,20 @@
             const { directories = [], files = [] } = data;
             const productMap = new Map();
 
-            // 处理目录，提取商品信息
             directories.forEach(dirPath => {
                 const folderName = dirPath.split('/').pop();
                 const parsedInfo = parseFolderName(folderName);
                 if (parsedInfo) {
                     productMap.set(dirPath, {
-                        id: dirPath.replace(/[\/\.]/g, '_').replace(/-/g, '__'), // 生成唯一ID
+                        id: dirPath.replace(/[\/\.]/g, '_').replace(/-/g, '__'),
                         path: dirPath,
                         ...parsedInfo,
-                        price: parseFloat(parsedInfo.price.replace('¥', '')) || 0,
+                        priceNum: parseFloat(parsedInfo.price.replace('¥', '')) || 0,
                         images: []
                     });
                 }
             });
 
-            // 将图片文件关联到对应的商品
             files.forEach(file => {
                 const productDirPath = file.name.substring(0, file.name.lastIndexOf('/'));
                 if (productMap.has(productDirPath)) {
@@ -827,199 +874,134 @@
                 }
             });
 
-            // 过滤掉没有图片的商品，并对图片进行排序
             allProducts = Array.from(productMap.values()).filter(p => p.images.length > 0);
             allProducts.forEach(p => p.images.sort((a, b) => a.fileName.localeCompare(b.fileName)));
 
-            populateFilters(); // 填充筛选器
-            applyFilters();    // 应用筛选器并渲染商品
+            populateFiltersAndTags(); // 确保在渲染商品和管理标签前，allPossibleTags已更新
+            applyFilters();
         } catch (error) {
             console.error("加载商品数据失败:", error);
-            alert(`加载商品数据失败：${error.message}`);
+            showStatusMessage(`加载商品数据失败: ${error.message}`, 'error');
+            productsList.innerHTML = '';
+            noProductsMessage.style.display = 'block';
+            noProductsMessage.textContent = `加载商品失败，请检查API Token或网络连接。`;
         } finally {
             hideLoading();
         }
     }
 
-    /**
-     * 解析文件夹名称，提取商品属性。
-     * 文件夹名称格式示例: "99-背心_短袖-休闲_运动-夏季-日常-新款背心"
-     * @param {string} folderName - 文件夹名称
-     * @returns {object|null} 解析后的商品信息对象，如果格式不匹配则返回 null。
-     */
     function parseFolderName(folderName) {
         const parts = folderName.split('-');
-        // 预期格式至少包含价格、款式、标签、季节、场景和名称共6部分
-        if (parts.length < 6 || isNaN(parseInt(parts[0]))) {
-            return null;
-        }
-
-        const pricePart = parts[0];
-        const stylesPart = parts[1];
-        const tagsPart = parts[2];
-        const seasonsPart = parts[3];
-        const scenesPart = parts[4];
-        const namePart = parts.slice(5).join('-'); // 名称可能包含连字符
-
+        // 确保文件夹名至少包含价格、款式、标签、季节、场景、名称六部分
+        if (parts.length < 6 || isNaN(parseInt(parts[0]))) return null;
         return {
-            price: `¥${pricePart}`,
-            styles: stylesPart.split('_').filter(Boolean),
-            tags: tagsPart.split('_').filter(Boolean),
-            seasons: seasonsPart.split('_').filter(Boolean),
-            scenes: scenesPart.split('_').filter(Boolean),
-            name: namePart
+            price: `¥${parts[0]}`,
+            styles: parts[1].split('_').filter(Boolean),
+            tags: parts[2].split('_').filter(Boolean),
+            seasons: parts[3].split('_').filter(Boolean),
+            scenes: parts[4].split('_').filter(Boolean),
+            name: parts.slice(5).join('-')
         };
     }
 
-    // ==================== 筛选器逻辑 (Gallery) ====================
+    // ==================== 筛选器与标签池 ====================
+    function populateFiltersAndTags() {
+        const filters = { style: new Set(), tag: new Set(), season: new Set(), scene: new Set() };
+        // 重置 allPossibleTags 为 Set，以便收集唯一值
+        allPossibleTags = { styles: new Set(), tags: new Set(), seasons: new Set(), scenes: new Set() };
 
-    /**
-     * 遍历所有商品，收集所有唯一的款式、标签、季节和场景，并填充到筛选器中。
-     */
-    function populateFilters() {
-        const uniqueFilters = { style: new Set(), tag: new Set(), season: new Set(), scene: new Set() };
-        allProducts.forEach(product => {
-            product.styles.forEach(s => uniqueFilters.style.add(s));
-            product.tags.forEach(t => uniqueFilters.tag.add(t));
-            product.seasons.forEach(s => uniqueFilters.season.add(s));
-            product.scenes.forEach(s => uniqueFilters.scene.add(s));
+        allProducts.forEach(p => {
+            p.styles.forEach(s => { filters.style.add(s); allPossibleTags.styles.add(s); });
+            p.tags.forEach(t => { filters.tag.add(t); allPossibleTags.tags.add(t); });
+            p.seasons.forEach(s => { filters.season.add(s); allPossibleTags.seasons.add(s); });
+            p.scenes.forEach(s => { filters.scene.add(s); allPossibleTags.scenes.add(s); });
         });
+        
+        // 将 Set 转换为排序后的数组，并更新全局 allPossibleTags
+        for (const key in allPossibleTags) {
+            allPossibleTags[key] = Array.from(allPossibleTags[key]).sort();
+        }
 
-        for (const type in uniqueFilters) {
+        for (const type in filters) {
             const container = document.querySelector(`#filter-${type} .filter-tags`);
             if (container) {
-                renderFilterGroup(container, Array.from(uniqueFilters[type]).sort(), type);
+                renderFilterGroup(container, Array.from(filters[type]).sort(), type);
             }
         }
+        // 初始化 admin 区域的标签列表为可编辑状态
+        renderAdminTagsInCreateMode();
     }
 
-    /**
-     * 渲染单个筛选器组（如款式、标签等）。
-     * @param {HTMLElement} container - 筛选器标签的父容器。
-     * @param {string[]} items - 待渲染的标签项数组。
-     * @param {string} filterType - 筛选器类型（'style', 'tag', 'season', 'scene'）。
-     */
     function renderFilterGroup(container, items, filterType) {
         container.innerHTML = '';
-        // 添加“全部”选项
         ['全部', ...items].forEach(item => {
             const tagLink = document.createElement('a');
             tagLink.className = 'filter-tag';
             tagLink.textContent = item;
-            
-            // 设置激活状态
-            if (item === '全部' && activeFilters[filterType].size === 0) {
-                tagLink.classList.add('active');
-            } else if (activeFilters[filterType].has(item)) {
+            if ((item === '全部' && activeFilters[filterType].size === 0) || activeFilters[filterType].has(item)) {
                 tagLink.classList.add('active');
             }
-
-            // 点击事件处理
             tagLink.onclick = () => {
-                if (item === '全部') {
-                    activeFilters[filterType].clear(); // 清除所有筛选
-                } else {
-                    // 切换选中状态
-                    activeFilters[filterType].has(item) ?
-                        activeFilters[filterType].delete(item) :
-                        activeFilters[filterType].add(item);
-                }
-                applyFilters();    // 重新应用筛选
-                populateFilters(); // 重新渲染筛选器以更新激活状态
+                if (item === '全部') activeFilters[filterType].clear();
+                else activeFilters[filterType].has(item) ? activeFilters[filterType].delete(item) : activeFilters[filterType].add(item);
+                applyFilters();
+                populateFiltersAndTags(); // 重绘以更新激活状态，确保筛选器显示正确
             };
             container.appendChild(tagLink);
         });
     }
 
-    /**
-     * 根据当前激活的筛选器过滤商品列表，并渲染结果。
-     */
     function applyFilters() {
         const filteredProducts = allProducts.filter(product => {
-            return Object.entries(activeFilters).every(([type, filterSet]) => {
-                // 如果该筛选器类型没有选中项，则所有商品都通过
-                if (filterSet.size === 0) {
-                    return true;
-                }
-                // 检查商品是否包含至少一个选中的属性
-                const productAttributes = product[`${type}s`];
-                return productAttributes.some(attribute => filterSet.has(attribute));
+            return ['style', 'tag', 'season', 'scene'].every(type => {
+                if (activeFilters[type].size === 0) return true;
+                return product[`${type}s`].some(attr => activeFilters[type].has(attr));
             });
         });
         renderProducts(filteredProducts);
     }
 
-
-    // ==================== 渲染逻辑 (Gallery & Detail) ====================
-
-    /**
-     * 渲染商品列表到页面。
-     * @param {object[]} products - 待渲染的商品数组。
-     */
+    // ==================== 渲染逻辑 ====================
     function renderProducts(products) {
-        productsList.innerHTML = ''; // 清空现有商品列表
-
-        // 显示或隐藏“未找到商品”消息
+        productsList.innerHTML = '';
         noProductsMessage.style.display = products.length === 0 ? 'block' : 'none';
+        if (products.length > 0) noProductsMessage.textContent = '未找到匹配的商品。';
 
         products.forEach(product => {
             const productCard = document.createElement('article');
             productCard.className = 'product-card';
             productCard.innerHTML = `
-                <a href="#" onclick="event.preventDefault(); showProductDetail('${product.id}');">
+                <a href="#">
                     <img src="${product.images.length > 0 ? product.images[0].src : ''}" alt="${product.name}" loading="lazy">
                     <div class="product-info">
                         <div class="product-name-price">
-                            <p class="price">¥${product.price}</p>
+                            <p class="price">${product.price}</p>
                             <h2>${product.name}</h2>
                         </div>
-                        <div class="product-season">${product.seasons.length > 0 ?  product.seasons.map(s => `<span>${s}</span>`).join('') : ''}</div>
-                        <div class="product-tags">${product.tags.length > 0 ?  product.tags.map(t => `<span>${t}</span>`).join('') : ''}</div>
+                        <div class="product-season">${product.seasons.map(s => `<span>${s}</span>`).join('')}</div>
+                        <div class="product-tags">${product.tags.map(t => `<span>${t}</span>`).join('')}</div>
                     </div>
                 </a>
             `;
+            productCard.onclick = (e) => {
+                e.preventDefault();
+                displayProductDetails(product);
+            };
             productsList.appendChild(productCard);
         });
-
-        // 每次重新渲染商品列表时，如果当前有详情页显示，需要确保它仍然显示正确的商品
-        // 或者在没有商品时隐藏详情页
-        if (products.length === 0) {
-            hideProductDetail();
-        } else {
-            const currentDetailId = detailView.dataset.productId;
-            if (currentDetailId && !products.some(p => p.id === currentDetailId)) {
-                hideProductDetail(); // 如果当前详情页的商品不在过滤后的列表中，则隐藏
-            }
-        }
     }
 
-    /**
-     * 显示指定商品的详情页。
-     * @param {string} productId - 商品的唯一ID。
-     */
-    function showProductDetail(productId) {
-        const product = allProducts.find(p => p.id === productId);
-        if (!product) {
-            console.error('未找到商品详情:', productId);
-            return;
-        }
-
+    function displayProductDetails(product) {
+        // 1. 显示详情
         const imagesHtml = product.images.map(img => `<img src="${img.src}" alt="${product.name}" loading="lazy">`).join('');
-        
         detailView.innerHTML = `
             <div class="modal-nav">
                 <a href="#" class="back-button" onclick="hideProductDetail()"></a>
-                <div class="product-title">
-                    ${product.name}
-                </div>
-                <div class="modal-nav-price">¥${product.price}</div>
+                <div class="product-title">${product.name}</div>
+                <div class="modal-nav-price">${product.price}</div>
             </div>
             <div class="modal-content-inner">
                 ${imagesHtml}
-                <div class="modal-header">
-                    <!-- <h3>${product.name}</h3> -->
-                    <!-- <p class="modal-price">¥${product.price}</p> -->
-                </div>
                 <p class="modal-description">
                     ${product.styles.length > 0 ? `<strong>款式:</strong> ${product.styles.join(', ')}<br>` : ''}
                     ${product.tags.length > 0 ? `<strong>标签:</strong> ${product.tags.join(', ')}<br>` : ''}
@@ -1029,485 +1011,274 @@
             </div>
         `;
         detailView.classList.add('active');
-        detailView.dataset.productId = productId; // 存储当前显示的商品ID
         detailPlaceholder.style.display = 'none';
-    }
 
-    /**
-     * 隐藏商品详情页。
-     */
+        // 2. 填充并锁定管理区域
+        loadProductIntoAdminForm(product);
+    }
+    
     function hideProductDetail() {
         detailView.classList.remove('active');
         detailView.innerHTML = '';
-        delete detailView.dataset.productId; // 移除存储的商品ID
         detailPlaceholder.style.display = 'block';
     }
 
+    // ==================== Admin 表单管理与交互 (核心逻辑) ====================
+    function loadProductIntoAdminForm(product) {
+        currentSelectedProductForAdmin = product;
 
-    // ==================== API Token 管理 (Admin) ====================
+        // 填充基本信息，这些输入框将被禁用
+        styleNameInput.value = product.name;
+        priceInput.value = product.priceNum;
 
-    /**
-     * 从 localStorage 加载 API Token 并填充到输入框。
-     * 如果存在 Token，则尝试获取并填充标签。
-     */
-    function loadApiToken() {
-      const storedToken = localStorage.getItem(API_TOKEN_KEY);
-      if (storedToken) {
-        apiTokenInput.value = storedToken;
-        fetchAndPopulateTags();
-      }
-    }
-
-    /**
-     * 保存 API Token 到 localStorage。
-     */
-    function saveApiToken() {
-      const apiToken = apiTokenInput.value;
-      if (apiToken) {
-        localStorage.setItem(API_TOKEN_KEY, apiToken);
-        showStatusMessage('API Token 已保存', 'success');
-        fetchAndPopulateTags();
-      } else {
-        localStorage.removeItem(API_TOKEN_KEY);
-        showStatusMessage('API Token 不能为空，已清除保存的 Token', 'error');
-      }
-    }
-
-    // ==================== 动态标签管理 (Admin) ====================
-
-    /**
-     * 从 API 获取现有标签（款式、标签、季节、场景）并填充到管理后台。
-     */
-    async function fetchAndPopulateTags() {
-      const apiToken = apiTokenInput.value;
-      if (!apiToken) {
-        return;
-      }
-
-      showStatusMessage('正在加载现有标签...', '');
-      const tagFetchStartTime = Date.now();
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/manage/list?dir=服装&count=-1&recursive=false`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(`加载标签失败，状态码：${response.status}，信息：${errorData.error || errorData.message || response.statusText}`);
-        }
-
-        const data = await response.json();
+        // 渲染管理区域的标签为 "显示模式" (非交互)
+        renderAdminTagsInDisplayMode(product);
         
-        // 清空现有标签数据
-        existingStyles = [];
-        existingTags = [];
-        existingSeasons = [];
-        existingScenes = [];
+        // 设置管理后台表单状态为锁定，并更新拖拽区域的提示信息
+        setAdminFormState(true, product);
+    }
 
-        const uniqueStyles = new Set();
-        const uniqueTags = new Set();
-        const uniqueSeasons = new Set();
-        const uniqueScenes = new Set();
+    function clearAdminProductSelection() {
+        currentSelectedProductForAdmin = null;
+        styleNameInput.value = '';
+        priceInput.value = '';
+        
+        // 清空 "创建模式" 的已选标签
+        for(const key in createModeSelectedTags) {
+            createModeSelectedTags[key].clear();
+        }
+        
+        filesToUpload = []; // 清空待上传文件列表
+        updateFileListDisplay(); // 更新文件列表显示并相应地禁用/启用上传按钮
+        
+        // 渲染管理区域的标签为 "创建/编辑模式" (可交互)
+        renderAdminTagsInCreateMode();
 
-        // 从目录名称中解析并收集所有唯一的标签
-        if (data.directories && data.directories.length > 0) {
-          data.directories.forEach(dirPath => {
-            const folderName = dirPath.split('/').pop();
-            const parts = folderName.split('-');
-            // 确保文件夹名称至少包含5个部分（价格、款式、标签、季节、场景）
-            if (parts.length >= 5) {
-              const stylesPart = parts[1];
-              const tagsPart = parts[2];
-              const seasonsPart = parts[3];
-              const scenesPart = parts[4];
+        setAdminFormState(false); // 解锁表单，并更新拖拽区域的提示信息
+        showStatusMessage('已清除商品选择，可以输入信息创建新商品。', '');
+    }
 
-              stylesPart?.split('_').filter(t => t).forEach(t => uniqueStyles.add(t));
-              tagsPart?.split('_').filter(t => t).forEach(t => uniqueTags.add(t));
-              seasonsPart?.split('_').filter(t => t).forEach(t => uniqueSeasons.add(t));
-              scenesPart?.split('_').filter(t => t).forEach(t => uniqueScenes.add(t));
+    /**
+     * 根据产品数据显示标签 (锁定状态)
+     */
+    function renderAdminTagsInDisplayMode(product) {
+        renderSingleAdminTagGroup('style-list', allPossibleTags.styles, product.styles);
+        renderSingleAdminTagGroup('tag-list', allPossibleTags.tags, product.tags);
+        renderSingleAdminTagGroup('season-list', allPossibleTags.seasons, product.seasons);
+        renderSingleAdminTagGroup('scene-list', allPossibleTags.scenes, product.scenes);
+    }
+
+    /**
+     * 渲染可交互的标签 (创建模式)
+     */
+    function renderAdminTagsInCreateMode() {
+        renderSingleAdminTagGroup('style-list', allPossibleTags.styles, createModeSelectedTags.styles, true, 'styles');
+        renderSingleAdminTagGroup('tag-list', allPossibleTags.tags, createModeSelectedTags.tags, true, 'tags');
+        renderSingleAdminTagGroup('season-list', allPossibleTags.seasons, createModeSelectedTags.seasons, true, 'seasons');
+        renderSingleAdminTagGroup('scene-list', allPossibleTags.scenes, createModeSelectedTags.scenes, true, 'scenes');
+    }
+
+    /**
+     * 渲染单个 admin 标签组的通用函数
+     * @param {string} containerId - 容器元素的ID
+     * @param {string[]} allItems - 该分类所有可能的标签 (来自 allPossibleTags)
+     * @param {string[]|Set} selectedItems - 已选中的标签 (可能是产品已有的，或创建模式下用户选择的)
+     * @param {boolean} isEditable - 是否可编辑 (创建模式)
+     * @param {string} categoryKey - 'styles', 'tags' 等, 用于在编辑模式下更新状态
+     */
+    function renderSingleAdminTagGroup(containerId, allItems, selectedItems, isEditable = false, categoryKey = '') {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        const selectedSet = new Set(selectedItems); // 统一处理 Array 和 Set
+
+        allItems.forEach(item => {
+            const tagDiv = document.createElement('div');
+            tagDiv.className = 'tag-item';
+            tagDiv.textContent = item;
+
+            if (selectedSet.has(item)) {
+                tagDiv.classList.add('selected');
             }
-          });
-        }
-        
-        // 更新全局标签数组并排序
-        existingStyles = Array.from(uniqueStyles).sort();
-        existingTags = Array.from(uniqueTags).sort();
-        existingSeasons = Array.from(uniqueSeasons).sort();
-        existingScenes = Array.from(uniqueScenes).sort();
 
-        // 渲染标签列表
-        renderTagList('style-list', existingStyles, selectedStyles, tag => toggleTag(tag, selectedStyles));
-        renderTagList('tag-list', existingTags, selectedTags, tag => toggleTag(tag, selectedTags));
-        renderTagList('season-list', existingSeasons, selectedSeasons, tag => toggleTag(tag, selectedSeasons));
-        renderTagList('scene-list', existingScenes, selectedScenes, tag => toggleTag(tag, selectedScenes));
-
-        const tagFetchTime = Date.now() - tagFetchStartTime;
-        showStatusMessage(`标签加载完成 (${existingStyles.length} 款式, ${existingTags.length} 标签, ${existingSeasons.length} 季节, ${existingScenes.length} 场景)。耗时 ${tagFetchTime}ms`, 'success');
-
-      } catch (error) {
-        console.error('加载标签出错:', error);
-        showStatusMessage(`加载现有标签出错：${error.message}，请检查 API Token 是否正确或网络连接`, 'error');
-      }
-    }
-
-    /**
-     * 渲染单个标签列表（如款式列表、标签列表等）。
-     * @param {string} tagListId - 标签列表容器的 ID。
-     * @param {string[]} tagsData - 待渲染的标签数据数组。
-     * @param {Set<string>} selectedTagsSet - 当前选中的标签集合。
-     * @param {function(string): void} onTagClick - 标签点击事件的回调函数。
-     */
-    function renderTagList(tagListId, tagsData, selectedTagsSet, onTagClick) {
-      const tagListDiv = document.getElementById(tagListId);
-      tagListDiv.innerHTML = ''; // 清空现有标签
-
-      tagsData.forEach(tag => {
-        const tagItem = document.createElement('div');
-        tagItem.classList.add('tag-item');
-        tagItem.textContent = tag;
-        // 设置选中状态
-        if (selectedTagsSet.has(tag)) {
-          tagItem.classList.add('selected');
-        }
-
-        // 添加点击事件监听器
-        tagItem.addEventListener('click', () => {
-          onTagClick(tag); // 调用传入的点击处理函数
-          tagItem.classList.toggle('selected', selectedTagsSet.has(tag)); // 更新样式
+            if (!isEditable) {
+                tagDiv.classList.add('disabled'); // 在显示模式下，标签不可交互
+            } else {
+                tagDiv.onclick = () => {
+                    const currentSelections = createModeSelectedTags[categoryKey];
+                    if (currentSelections.has(item)) {
+                        currentSelections.delete(item);
+                        tagDiv.classList.remove('selected');
+                    } else {
+                        currentSelections.add(item);
+                        tagDiv.classList.add('selected');
+                    }
+                };
+            }
+            container.appendChild(tagDiv);
         });
-
-        tagListDiv.appendChild(tagItem);
-      });
     }
 
     /**
-     * 添加新标签到指定类别。
-     * @param {string} tagInputId - 新标签输入框的 ID。
-     * @param {string} tagListId - 标签列表容器的 ID。
-     * @param {string[]} existingTagsArray - 存储现有标签的数组。
-     * @param {Set<string>} selectedTagsSet - 存储选中标签的集合。
+     * 设置管理后台表单的启用/禁用状态，并更新提示信息
+     * @param {boolean} locked - 是否锁定表单 (true for selecting an existing product)
+     * @param {object|null} product - 当前选中的产品对象
      */
-    function addNewTag(tagInputId, tagListId, existingTagsArray, selectedTagsSet) {
-      const newTagInput = document.getElementById(tagInputId);
-      const newTag = newTagInput.value.trim();
+    function setAdminFormState(locked, product = null) {
+        // 禁用/启用款式名称、价格和新增标签的输入框
+        [styleNameInput, priceInput, newStyleInput, newTagInput, newSeasonInput, newSceneInput].forEach(el => el.disabled = locked);
 
-      if (newTag) {
-        // 如果新标签不存在，则添加到现有标签数组并排序
-        if (!existingTagsArray.includes(newTag)) {
-          existingTagsArray.push(newTag);
-          existingTagsArray.sort();
+        if (locked && product) {
+            adminSelectionMessage.innerHTML = `当前已选择商品：<strong>${product.name}</strong><br>所有上传的图片将添加到此商品。`;
+            clearAdminSelectionBtn.style.display = 'inline-block';
+            dropAreaMessage.textContent = `拖拽图片或点击选择文件，将上传到“${product.name}”`; // 明确提示上传目标
+        } else {
+            adminSelectionMessage.textContent = '点击左侧商品选择，上传新图片到该商品；或输入信息创建新商品。';
+            clearAdminSelectionBtn.style.display = 'none';
+            dropAreaMessage.textContent = '拖拽图片到这里或点击选择文件'; // 恢复默认提示
         }
-        // 确保新标签被选中
-        if (!selectedTagsSet.has(newTag)) {
-            selectedTagsSet.add(newTag);
-        }
-        // 重新渲染标签列表
-        renderTagList(tagListId, existingTagsArray, selectedTagsSet, tag => {
-          toggleTag(tag, selectedTagsSet);
-        });
-      }
-      newTagInput.value = ''; // 清空输入框
     }
-
-    /**
-     * 切换标签的选中状态。
-     * @param {string} tag - 待切换的标签。
-     * @param {Set<string>} selectedTagsSet - 存储选中标签的集合。
-     */
-    function toggleTag(tag, selectedTagsSet) {
-      if (selectedTagsSet.has(tag)) {
-        selectedTagsSet.delete(tag);
-      } else {
-        selectedTagsSet.add(tag);
-      }
-    }
-
-    // 为新标签输入框添加回车事件监听器
-    newStyleInput.addEventListener('keyup', function (event) {
-      if (event.key === 'Enter') {
-        addNewTag('new-style', 'style-list', existingStyles, selectedStyles);
-      }
-    });
-    newTagInput.addEventListener('keyup', function (event) {
-      if (event.key === 'Enter') {
-        addNewTag('new-tag', 'tag-list', existingTags, selectedTags);
-      }
-    });
-    newSeasonInput.addEventListener('keyup', function (event) {
-      if (event.key === 'Enter') {
-        addNewTag('new-season', 'season-list', existingSeasons, selectedSeasons);
-      }
-    });
-    newSceneInput.addEventListener('keyup', function (event) {
-      if (event.key === 'Enter') {
-        addNewTag('new-scene', 'scene-list', existingScenes, selectedScenes);
-      }
-    });
-
-    // ==================== 文件选择与拖拽 (Admin) ====================
-
-    /**
-     * 处理文件选择事件，将选中的文件添加到待上传列表。
-     * @param {FileList} files - FileList 对象。
-     */
+    
     function handleFileSelect(files) {
       filesToUpload.push(...Array.from(files));
       updateFileListDisplay();
     }
-
-    /**
-     * 更新文件列表显示区域。
-     */
     function updateFileListDisplay() {
-        if (filesToUpload.length > 0) {
-            fileListDiv.innerHTML = `<p>已选择 ${filesToUpload.length} 个文件：</p>`;
-            filesToUpload.forEach((file, index) => {
-                const p = document.createElement('p');
-                p.textContent = `${index + 1}. ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-                fileListDiv.appendChild(p);
-            });
-            uploadButton.disabled = false;
-        } else {
-            fileListDiv.innerHTML = '<p>无文件待上传</p>';
-            uploadButton.disabled = true;
-        }
+        fileListDiv.innerHTML = filesToUpload.length > 0 
+            ? `<p>已选择 ${filesToUpload.length} 个文件:</p>` + filesToUpload.map(f => `<p>${f.name}</p>`).join('')
+            : '<p>无文件待上传</p>';
+        uploadButton.disabled = filesToUpload.length === 0; // 上传按钮只在有文件时启用
     }
+    dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag-over'); });
+    dropArea.addEventListener('dragleave', e => { e.preventDefault(); dropArea.classList.remove('drag-over'); });
+    dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.classList.remove('drag-over'); handleFileSelect(e.dataTransfer.files); });
+    dropArea.addEventListener('click', () => document.getElementById('image').click());
 
-    // 拖拽区域事件监听器
-    dropArea.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      dropArea.classList.add('drag-over');
-      e.dataTransfer.dropEffect = 'copy';
-    });
-
-    dropArea.addEventListener('dragleave', function (e) {
-      e.preventDefault();
-      dropArea.classList.remove('drag-over');
-    });
-
-    dropArea.addEventListener('drop', function (e) {
-      e.preventDefault();
-      dropArea.classList.remove('drag-over');
-      handleFileSelect(e.dataTransfer.files);
-    });
-
-    // 点击拖拽区域触发文件选择
-    dropArea.addEventListener('click', function () {
-      document.getElementById('image').click();
-    });
-
-    // ==================== 批量图片上传 (Admin) ====================
-
-    /**
-     * 上传单个图片文件。
-     * @param {File} file - 待上传的文件。
-     * @param {string} apiToken - API Token。
-     * @param {string} styleName - 款式名称。
-     * @param {string} price - 价格。
-     * @param {Set<string>} styles - 选中的款式标签集合。
-     * @param {Set<string>} tags - 选中的标签集合。
-     * @param {Set<string>} seasons - 选中的季节标签集合。
-     * @param {Set<string>} scenes - 选中的场景标签集合。
-     * @returns {Promise<boolean>} - 上传是否成功。
-     */
-   async function uploadSingleImage(file, apiToken, styleName, price, styles, tags, seasons, scenes) {
-      const styleStr = Array.from(styles).join('_');
-      const tagStr = Array.from(tags).join('_');
-      const seasonStr = Array.from(seasons).join('_');
-      const sceneStr = Array.from(scenes).join('_');
-
-      // 验证所有必填字段和标签是否已选择
-      if (!price || styleStr === '' || tagStr === '' || seasonStr === '' || sceneStr === '' || !styleName) {
-        showStatusMessage(`文件 "${file.name}" 上传失败：请确保所有标签类别至少选中一项，并填写款式名称和价格。`, 'error');
-        return false;
-      }
-
-      // 构建上传文件夹路径
-      const uploadFolder = `服装/${price}-${styleStr}-${tagStr}-${seasonStr}-${sceneStr}-${styleName}`;
-      
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        showStatusMessage(`正在上传 "${file.name}"...`, '');
-        const response = await fetch(`${API_BASE_URL}/upload?uploadFolder=${encodeURIComponent(uploadFolder)}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`
-          },
-          body: formData
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(`上传 "${file.name}" 失败，状态码：${response.status}，信息：${errorData.error || errorData.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (data && data[0] && data[0].src) {
-            showStatusMessage(`"${file.name}" 上传成功！链接片段：${data[0].src}`, 'success');
-            return true;
-        } else {
-          showStatusMessage(`"${file.name}" 上传成功，但未能获取图片链接。响应: ${JSON.stringify(data)}`, 'success');
-          return true;
-        }
-
-      } catch (error) {
-        console.error(`"${file.name}" 上传出错:`, error);
-        showStatusMessage(`"${file.name}" 上传出错：${error.message}`, 'error');
-        return false;
-      }
-    }
-
-    /**
-     * 批量上传所有选中的图片。
-     */
     async function uploadImages() {
-      const apiToken = apiTokenInput.value;
-      const styleName = styleNameInput.value;
-      const price = priceInput.value;
+        const apiToken = apiTokenInput.value.trim();
+        if (!apiToken) { showStatusMessage('请填写 API Token！', 'error'); return; }
+        if (filesToUpload.length === 0) { showStatusMessage('请选择要上传的文件！', 'error'); return; }
 
-      // 再次验证输入
-      if (!apiToken || !styleName || !price || filesToUpload.length === 0) {
-        showStatusMessage('请填写所有必填字段（API Token、款式名称、价格），并选择至少一个文件进行上传', 'error');
-        return;
-      }
-       if (selectedStyles.size === 0 || selectedTags.size === 0 || selectedSeasons.size === 0 || selectedScenes.size === 0) {
-           showStatusMessage('请确保所有标签类别（款式、标签、季节、场景）至少选中一项', 'error');
-           return;
-       }
-
-      // 禁用上传按钮和输入，防止重复提交
-      uploadButton.disabled = true;
-      uploadButton.textContent = '上传中...';
-      disableInputs(true);
-
-      let uploadSuccessCount = 0;
-      let uploadFailCount = 0;
-
-      // 复制待上传文件列表，并清空原列表，以便在上传过程中可以继续选择文件
-      const currentFilesToUpload = [...filesToUpload];
-      filesToUpload = [];
-      updateFileListDisplay();
-
-      // 逐个上传文件
-      for (const file of currentFilesToUpload) {
-        const success = await uploadSingleImage(file, apiToken, styleName, price, selectedStyles, selectedTags, selectedSeasons, selectedScenes);
-        if (success) {
-          uploadSuccessCount++;
+        let uploadFolder = '';
+        if (currentSelectedProductForAdmin) {
+            // 如果已选择商品，上传到该商品的目录
+            uploadFolder = currentSelectedProductForAdmin.path;
         } else {
-          uploadFailCount++;
+            // 否则，创建新商品
+            const name = styleNameInput.value.trim();
+            const price = priceInput.value.trim();
+            // 在这里使用 `createModeSelectedTags` 而不是 `allPossibleTags`，因为 allPossibleTags 包含所有可能标签，createModeSelectedTags 包含用户为新产品选择的标签
+            const styles = Array.from(createModeSelectedTags.styles).join('_');
+            const tags = Array.from(createModeSelectedTags.tags).join('_');
+            const seasons = Array.from(createModeSelectedTags.seasons).join('_');
+            const scenes = Array.from(createModeSelectedTags.scenes).join('_');
+
+            if (!name || !price || !styles || !tags || !seasons || !scenes) {
+                showStatusMessage('创建新商品时，名称、价格和各类标签都必须填写/选择。', 'error');
+                return;
+            }
+            uploadFolder = `服装/${price}-${styles}-${tags}-${seasons}-${scenes}-${name}`;
         }
-      }
+        
+        uploadButton.disabled = true;
+        uploadButton.textContent = '上传中...';
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const file of filesToUpload) {
+            const success = await uploadSingleImage(file, uploadFolder, apiToken);
+            if (success) successCount++;
+            else failCount++;
+        }
+        
+        let finalMessage = `上传完成。成功：${successCount}，失败：${failCount}。`;
+        showStatusMessage(finalMessage, failCount > 0 ? 'error' : 'success');
+        
+        filesToUpload = []; // 清空待上传文件列表
+        updateFileListDisplay(); // 更新显示，上传按钮会再次禁用
+        uploadButton.textContent = '上传图片';
 
-      // 显示最终上传结果
-      let finalMessage = `所有文件上传完成。成功：${uploadSuccessCount} 个，失败：${uploadFailCount} 个。`;
-      if (uploadFailCount > 0) {
-          showStatusMessage(finalMessage, 'error');
-      } else {
-          showStatusMessage(finalMessage, 'success');
-          // 上传成功后清空表单
-          styleNameInput.value = '';
-          priceInput.value = '';
-          selectedStyles.clear();
-          selectedTags.clear();
-          selectedSeasons.clear();
-          selectedScenes.clear();
-          // 重新渲染标签列表以清除选中状态
-          renderTagList('style-list', existingStyles, selectedStyles, tag => toggleTag(tag, selectedStyles));
-          renderTagList('tag-list', existingTags, selectedTags, tag => toggleTag(tag, selectedTags));
-          renderTagList('season-list', existingSeasons, selectedSeasons, tag => toggleTag(tag, selectedSeasons));
-          renderTagList('scene-list', existingScenes, selectedScenes, tag => toggleTag(tag, selectedScenes));
-      }
-
-      // 恢复上传按钮和输入状态
-      uploadButton.disabled = false;
-      uploadButton.textContent = '上传图片';
-      disableInputs(false);
-      fetchAndPopulateTags(); // 刷新标签列表
-      fetchAllProducts(); // 刷新画廊
+        // 刷新画廊以显示新上传的图片或商品
+        resetAndLoad();
+    }
+    
+    async function uploadSingleImage(file, uploadFolder, apiToken) {
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const response = await fetch(`${API_BASE_URL}/upload?uploadFolder=${encodeURIComponent(uploadFolder)}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${apiToken}` },
+                body: formData
+            });
+            if (!response.ok) throw new Error(`服务器错误: ${response.statusText}`);
+            return true;
+        } catch (error) {
+            console.error(`上传 "${file.name}" 失败:`, error);
+            // 可以在这里细化错误处理，例如记录哪个文件失败了
+            return false;
+        }
     }
 
-    /**
-     * 禁用或启用管理后台的输入元素和按钮。
-     * @param {boolean} disable - 是否禁用。
-     */
-    function disableInputs(disable) {
-      apiTokenInput.disabled = disable;
-      apiTokenSaveButton.disabled = disable;
-      styleNameInput.disabled = disable;
-      priceInput.disabled = disable;
-      newStyleInput.disabled = disable;
-      newTagInput.disabled = disable;
-      newSeasonInput.disabled = disable;
-      newSceneInput.disabled = disable;
-      dropArea.style.pointerEvents = disable ? 'none' : 'auto';
-      dropArea.style.opacity = disable ? 0.6 : 1;
 
-      document.querySelectorAll('.tag-item').forEach(item => {
-          item.style.pointerEvents = disable ? 'none' : 'auto';
-          item.style.opacity = disable ? 0.6 : 1;
-      });
-    }
-
-    // ==================== 状态消息显示 (Admin) ====================
-
-    /**
-     * 显示状态消息。
-     * @param {string} message - 消息内容。
-     * @param {'success'|'error'|''} type - 消息类型，用于样式。
-     */
+    // ==================== 通用函数与事件监听 ====================
+    function showLoading() { if (loadingOverlay) loadingOverlay.classList.remove('hidden'); }
+    function hideLoading() { if (loadingOverlay) loadingOverlay.classList.add('hidden'); }
     function showStatusMessage(message, type) {
       statusMessageDiv.textContent = message;
-      statusMessageDiv.className = ''; // 清除所有现有类
-      if (type) statusMessageDiv.classList.add(type); // 添加新类型类
+      statusMessageDiv.className = type;
       statusMessageDiv.style.display = 'block';
     }
 
-    // ==================== 通用函数与事件监听 ====================
-
-    /**
-     * 显示加载覆盖层。
-     */
-    function showLoading() {
-        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
-    }
-
-    /**
-     * 隐藏加载覆盖层。
-     */
-    function hideLoading() {
-        if (loadingOverlay) loadingOverlay.classList.add('hidden');
-    }
-
-    /**
-     * 重置画廊筛选器并重新加载商品数据。
-     */
-    function resetAndLoadGallery() {
+    function resetAndLoad() {
         activeFilters = { style: new Set(), tag: new Set(), season: new Set(), scene: new Set() };
+        clearAdminProductSelection();
         fetchAllProducts();
         hideProductDetail();
     }
     
-    // DOM 内容加载完成后执行初始化
     document.addEventListener('DOMContentLoaded', () => {
-        loadApiToken(); // 加载 Admin 的 API Token
-        updateFileListDisplay(); // 初始化 Admin 的文件列表显示
-        resetAndLoadGallery(); // 加载 Gallery 的商品数据
+        const storedToken = localStorage.getItem(API_TOKEN_KEY);
+        if (storedToken) apiTokenInput.value = storedToken;
+        
+        resetAndLoad(); // 页面加载后立即重置并加载数据
 
-        // 为 Logo 添加点击事件，重置画廊
-        document.querySelector('.logo a').addEventListener('click', (event) => {
-            event.preventDefault();
-            resetAndLoadGallery();
+        document.querySelector('.logo a').addEventListener('click', e => { e.preventDefault(); resetAndLoad(); });
+        clearAdminSelectionBtn.addEventListener('click', clearAdminProductSelection);
+        apiTokenSaveButton.addEventListener('click', () => {
+            localStorage.setItem(API_TOKEN_KEY, apiTokenInput.value);
+            showStatusMessage('API Token 已保存。', 'success');
+            resetAndLoad(); // 保存后立即刷新，重新加载数据
         });
+        
+        // 为新标签输入框添加回车事件，修正闭包bug
+        const setupNewTagInput = (inputId, categoryKey) => { // 移除allTagsArray参数
+            document.getElementById(inputId).addEventListener('keyup', (event) => {
+                // 只有在未选择现有商品 (即创建新商品模式) 且按下回车键时才响应
+                if (event.key === 'Enter' && !currentSelectedProductForAdmin) {
+                    const input = event.target;
+                    const newTag = input.value.trim();
+                    if (newTag) {
+                        // 直接从全局 allPossibleTags 对象获取最新引用
+                        const currentAllTagsForCategory = allPossibleTags[categoryKey]; 
+                        if (!currentAllTagsForCategory.includes(newTag)) {
+                            currentAllTagsForCategory.push(newTag);
+                            currentAllTagsForCategory.sort();
+                        }
+                        // 同时将新标签添加到当前创建中的商品的选择列表
+                        createModeSelectedTags[categoryKey].add(newTag);
+                        input.value = ''; // 清空输入框
+                        renderAdminTagsInCreateMode(); // 重新渲染以显示新标签并选中
+                    }
+                }
+            });
+        };
+        // 调用时不再传递第三个参数
+        setupNewTagInput('new-style', 'styles');
+        setupNewTagInput('new-tag', 'tags');
+        setupNewTagInput('new-season', 'seasons');
+        setupNewTagInput('new-scene', 'scenes');
 
-        // 为 API Token 保存按钮添加点击事件
-        apiTokenSaveButton.addEventListener('click', saveApiToken);
+        uploadButton.addEventListener('click', uploadImages); // 绑定上传按钮点击事件
     });
   </script>
 </body>
