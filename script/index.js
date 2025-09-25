@@ -178,8 +178,13 @@
         const modalDiv = document.createElement('div');
         modalDiv.className = 'modal';
         modalDiv.id = modalId;
+        const galleryId = `gallery-${product.id}`;
 
-        const imagesHtml = product.images.map(img => `<img src="${img.src}" alt="${product.name}" loading="lazy">`).join('');
+        const imagesHtml = product.images.map((img, index) => `
+            <a href="${img.src}" data-fancybox="gallery-${product.id}" data-caption="${product.name} - ${index + 1}">
+                <img src="${img.src}" alt="${product.name}" loading="lazy">
+            </a>
+        `).join('');
         
         modalDiv.innerHTML = `
             <div class="modal-nav">
@@ -189,7 +194,7 @@
                 </div>
                 <div class="modal-nav-price">¥${product.price}</div>
             </div>
-            <div class="modal-content">
+            <div class="modal-content" id="${galleryId}">
                 ${imagesHtml}
                 <div class="modal-header">
                     <!-- <h3>${product.name}</h3> -->
@@ -214,6 +219,7 @@
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             window.location.hash = modalId; // 可选：仍然更新哈希以便分享
+            // Fancybox 会自动处理点击事件，无需手动初始化
         }
     }
 
@@ -226,6 +232,7 @@
             if (window.location.hash === `#${modalId}`) {
                 history.pushState("", document.title, window.location.pathname + window.location.search);
             }
+            // Fancybox 会自动关闭，无需手动销毁
         }
     }
 
@@ -252,6 +259,7 @@
         if (window.location.hash) {
             history.pushState("", document.title, window.location.pathname + window.location.search);
         }
+        // Fancybox 会自动关闭，无需手动销毁
     }
     
     // 按下 Esc 键关闭模态框
