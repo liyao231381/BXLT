@@ -383,10 +383,10 @@
     /* 媒体查询 */
     @media (min-width: 768px) {
         .container {
-            min-width: 100%;
+            max-width: 100%;
         }
         .products {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 3fr)); /* 平板三列 */
+            grid-template-columns: repeat(auto-fit, minmax(200px, 3fr));
         }
         .modal-content {
             max-width: 600px;
@@ -394,9 +394,9 @@
     }
     @media (min-width: 992px) {
         .container {
-            max-width: 1200px; 
+            max-width: 100%; 
         }
-              .products {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 8fr));
-      }
+        .products {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 8fr));
+        }
     }
