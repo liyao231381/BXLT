@@ -529,6 +529,35 @@
       }
     });
 
+    /**
+     * 将图片文件转换为 WebP 格式。
+     * @param {File} file - 原始图片文件。
+     * @returns {Promise<File>} - 转换后的 WebP 文件。
+     */
+    async function convertToWebP(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    canvas.toBlob((blob) => {
+                        const webpFileName = file.name.replace(/\.(jpeg|jpg|png|gif)$/i, '.webp');
+                        const webpFile = new File([blob], webpFileName, { type: 'image/webp', lastModified: Date.now() });
+                        resolve(webpFile);
+                    }, 'image/webp', 0.8); // 0.8 是 WebP 质量，可以根据需要调整
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     async function uploadImages() {
         const apiToken = getApiToken();
         if (!apiToken) { return; } // getApiToken() 会显示错误信息
@@ -571,7 +600,26 @@
 
             selectedFilePreviews[i].status = 'uploading'; // 设置为正在上传
             renderSelectedFilePreviews(); // 立即更新UI
-            const success = await uploadSingleImage(selectedFilePreviews[i].file, uploadFolder, apiToken);
+
+            let fileToUpload = selectedFilePreviews[i].file;
+            // 检查文件类型，如果不是 WebP，则尝试转换
+            if (!fileToUpload.type.startsWith('image/webp')) {
+                try {
+                    fileToUpload = await convertToWebP(fileToUpload);
+                    // 更新预览信息中的文件对象，但保留原始预览URL
+                    selectedFilePreviews[i].file = fileToUpload; 
+                } catch (error) {
+                    console.error(`转换 "${fileToUpload.name}" 为 WebP 失败:`, error);
+                    selectedFilePreviews[i].status = 'failed';
+                    failCount++;
+                    uploadStopped = true;
+                    showStatusMessage(`转换 "${fileToUpload.name}" 为 WebP 失败，已暂停后续上传。`, 'error');
+                    renderSelectedFilePreviews();
+                    continue;
+                }
+            }
+
+            const success = await uploadSingleImage(fileToUpload, uploadFolder, apiToken);
             if (success) {
                 selectedFilePreviews[i].status = 'success'; // 设置为上传成功
                 successCount++;
@@ -579,7 +627,7 @@
                 selectedFilePreviews[i].status = 'failed'; // 设置为上传失败
                 failCount++;
                 uploadStopped = true; // 设置标志位，中断后续上传
-                showStatusMessage(`上传 "${selectedFilePreviews[i].file.name}" 失败，已暂停所有后续上传任务。`, 'error');
+                showStatusMessage(`上传 "${fileToUpload.name}" 失败，已暂停所有后续上传任务。`, 'error');
             }
             renderSelectedFilePreviews(); // 立即更新UI
         }
