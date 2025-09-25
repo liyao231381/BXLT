@@ -95,11 +95,9 @@
     }
 
     .admin-column .admin-container {
-        max-width: 100%; /* 保持 admin.html 的最大宽度 */
-        margin: 0 auto;
-        background-color: #f4f4f4;
         padding: 20px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        height: 100%;
     }
 
 
@@ -534,19 +532,16 @@
       flex-wrap: wrap;
       gap: 5px;
       margin-bottom: 10px;
-      min-height: 25px;
-      border: 1px solid #eee;
-      padding: 5px;
-      border-radius: 4px;
+      min-height: 20px;
     }
 
     .admin-column .tag-item {
       background-color: #e9ecef;
       color: #495057;
-      padding: 5px 10px;
+      padding: 4px 8px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.65rem;
       transition: background-color 0.2s, color 0.2s, opacity 0.2s;
     }
 
@@ -564,20 +559,43 @@
     /* 通用按钮样式 */
     .admin-column #upload-btn {
       width: 100%; /* 让上传按钮更显眼 */
-      background-color: #28a745;
+      background-color: #ffa500;
       padding: 12px 20px;
+      border-radius: 5px;
+      font-size: medium;
+      font-weight: bold;
     }
     .admin-column #upload-btn:hover:not(:disabled) {
-      background-color: #218838;
+      background-color: #ffd000;
+    }
+
+        /* 通用按钮样式 */
+    .admin-column #clear-selected-files-btn {
+      display: none;
+      min-width: fit-content;
+      font-size: 0.95em;
+      background-color: #dc3545;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      padding: 12px 20px;
+      border-radius: 5px;
+      font-size: medium;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .admin-column #clear-selected-files-btn:hover:not(:disabled) {
+      background-color: #ff7070;
     }
 
     /* 拖拽区域 */
     .admin-column #drop-area {
+      height: fit-content;
       border: 2px dashed #ccc;
-      padding: 20px;
+      border-radius: 5px;
+      padding: 5px 10px;
       text-align: center;
       cursor: pointer;
-      margin: 10px 0 15px 0;
       min-height: 80px;
       display: flex;
       flex-direction: column;
@@ -595,10 +613,9 @@
         color: #666;
     }
     .admin-column #file-list {
-        margin-top: 10px;
         font-size: 0.9em;
         color: #555;
-        max-height: 100px;
+        max-height: 200px;
         overflow-y: auto;
         width: 100%;
         text-align: left;

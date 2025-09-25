@@ -17,9 +17,9 @@
     const newSeasonInput = document.getElementById('new-season');
     const newSceneInput = document.getElementById('new-scene');
     const dropArea = document.getElementById('drop-area');
-    const dropAreaMessage = document.getElementById('drop-area-message'); // 新增 DOM 引用
     const fileListDiv = document.getElementById('file-list');
     const uploadButton = document.getElementById('upload-btn');
+    const clearSelectedFilesBtn = document.getElementById('clear-selected-files-btn'); // 新增：清空选择按钮
     const statusMessageDiv = document.getElementById('status-message');
     const clearAdminSelectionBtn = document.getElementById('clear-admin-selection-btn'); // 按钮仍然存在，只是位置改变
 
@@ -377,12 +377,9 @@
         if (locked && product) {
             // adminSelectionMessage 已被移除，不再更新其内容
             clearAdminSelectionBtn.style.display = 'inline-block';
-            dropAreaMessage.textContent = `拖拽图片或点击选择文件，将上传到“${product.name}”`; // 明确提示上传目标
         } else {
             // adminSelectionMessage 已被移除，不再更新其内容
             clearAdminSelectionBtn.style.display = 'none';
-            dropAreaMessage.textContent = '拖拽图片到这里或点击选择文件'; // 恢复默认提示
-            // clearAdminProductSelection 中已调用 showStatusMessage('已清除商品选择，可以输入信息创建新商品。', '');
         }
     }
     
@@ -411,6 +408,7 @@
             ? `<p>已选择 ${filesToUpload.length} 个文件:</p>` + filesToUpload.map(f => `<p>${f.name}</p>`).join('')
             : '<p>无文件待上传</p>';
         uploadButton.disabled = filesToUpload.length === 0; // 上传按钮只在有文件时启用
+        clearSelectedFilesBtn.style.display = filesToUpload.length > 0 ? 'inline-block' : 'none'; // 根据文件数量显示/隐藏清空选择按钮
     }
 
     function renderSelectedFilePreviews() {
@@ -746,5 +744,14 @@
                     showStatusMessage('无法获取图片路径进行删除。', 'error');
                 }
             }
+        });
+
+        // 清空选择按钮的点击事件
+        clearSelectedFilesBtn.addEventListener('click', () => {
+            filesToUpload = []; // 清空待上传文件列表
+            selectedFilePreviews = []; // 清空已选择文件预览列表
+            updateFileListDisplay(); // 更新文件列表显示
+            renderSelectedFilePreviews(); // 重新渲染已选择图片预览区域
+            showStatusMessage('已清空所有已选择文件。', 'success');
         });
     });

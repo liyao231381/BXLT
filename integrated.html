@@ -117,15 +117,17 @@
         <label for="image">选择图片 (可拖拽):</label>
         <input type="file" id="image" accept="image/*" multiple style="display: none;" onchange="handleFileSelect(this.files)">
         <div id="drop-area">
-          <p id="drop-area-message">拖拽图片到这里或点击选择文件</p>
           <div id="file-list"></div>
         </div>
 
-        <!-- 上传按钮 -->
-        <button id="upload-btn">上传图片</button>
+        <!-- 上传按钮和清空选择按钮 -->
+        <div style="display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 10px;">
+            <button id="upload-btn">上传图片</button>
+            <button id="clear-selected-files-btn">清空</button>
+        </div>
 
         <!-- 状态消息显示区域 -->
-        <div id="status-message"></div>
+        <div id="status-message" style="margin-top: 10px;"></div>
       </div>
     </div>
 
