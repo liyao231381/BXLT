@@ -56,7 +56,8 @@
     };
 
     let filesToUpload = []; // 存储待上传的文件对象
-    let selectedFilePreviews = []; // 存储已选择文件的预览信息 { file: File, previewUrl: string }
+    // 存储已选择文件的预览信息 { file: File, previewUrl: string, status: 'pending' | 'uploading' | 'success' | 'failed' }
+    let selectedFilePreviews = [];
 
 
     // ==================== 数据获取与解析 ====================
@@ -389,7 +390,7 @@
       Array.from(files).forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
-          selectedFilePreviews.push({ file: file, previewUrl: e.target.result });
+          selectedFilePreviews.push({ file: file, previewUrl: e.target.result, status: 'pending' }); // 初始化状态为 'pending'
           // 按文件名排序
           // 使用 Intl.Collator 进行数字感知排序
           const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
@@ -423,7 +424,9 @@
           imgItem.className = 'selected-image-item';
           imgItem.setAttribute('draggable', 'true'); // 使图片可拖拽
           imgItem.dataset.index = index; // 存储原始索引
+          const statusIndicatorClass = `status-indicator status-${item.status}`;
           imgItem.innerHTML = `
+            <div class="${statusIndicatorClass}"></div>
             <img src="${item.previewUrl}" alt="${item.file.name}" loading="lazy">
             <div class="image-filename" title="${item.file.name}">${item.file.name}</div>
             <button class="remove-image-btn" data-index="${index}" title="移除此图片">×</button>
@@ -560,10 +563,18 @@
         let successCount = 0;
         let failCount = 0;
         
-        for (const file of filesToUpload) {
-            const success = await uploadSingleImage(file, uploadFolder, apiToken);
-            if (success) successCount++;
-            else failCount++;
+        for (let i = 0; i < selectedFilePreviews.length; i++) {
+            selectedFilePreviews[i].status = 'uploading'; // 设置为正在上传
+            renderSelectedFilePreviews(); // 立即更新UI
+            const success = await uploadSingleImage(selectedFilePreviews[i].file, uploadFolder, apiToken);
+            if (success) {
+                selectedFilePreviews[i].status = 'success'; // 设置为上传成功
+                successCount++;
+            } else {
+                selectedFilePreviews[i].status = 'failed'; // 设置为上传失败
+                failCount++;
+            }
+            renderSelectedFilePreviews(); // 立即更新UI
         }
         
         let finalMessage = `上传完成。成功：${successCount}，失败：${failCount}。`;
