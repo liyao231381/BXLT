@@ -46,6 +46,7 @@
       flex: 1; /* 占据一份空间 */
       min-width: 300px; /* 最小宽度 */
       max-height: 100vh; /* 最大高度为视口高度 */
+      max-width: 25vw;
       background-color: #f4f4f4;
       padding: 5px;
       overflow-y: auto; /* 允许内容滚动 */
@@ -59,25 +60,25 @@
       flex: 1; /* 占据一份空间 */
       min-width: 300px; /* 最小宽度 */
       max-height: 100vh; /* 最大高度为视口高度 */
-      background-color: #fff;
+      max-width: 25vw;
+      background-color: #f4f4f4;
       padding: 5px;
       overflow-y: auto; /* 允许内容滚动 */
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
       align-items: flex-start; /* 内容从左上角开始 */
       justify-content: flex-start; /* 内容从顶部开始 */
       position: relative; /* 用于定位详情内容 */
-      scrollbar-width: thin;
     }
     .detail-column .product-detail-content {
         width: 100%;
-        background-color: #fff;
+        background-color: #f4f4f4;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         overflow-y: auto;
         display: none; /* 初始隐藏 */
         margin: 0 auto; /* 居中显示 */
         overflow-y: auto;
+        scrollbar-width: thin;
     }
     .detail-column .product-detail-content.active {
         display: block; /* 选中时显示 */
@@ -99,12 +100,13 @@
       max-height: 100vh; /* 最大高度为视口高度 */
       background-color: #f4f4f4;
       overflow-y: auto; /* 允许内容滚动 */
+      padding: 5px;
       scrollbar-width: none; /* Firefox 隐藏滚动条 */
     }
     .admin-column .admin-container {
-        max-width: 600px; /* 保持 admin.html 的最大宽度 */
+        max-width: 100%; /* 保持 admin.html 的最大宽度 */
         margin: 0 auto;
-        background-color: #fff;
+        background-color: #f4f4f4;
         padding: 20px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
@@ -196,6 +198,7 @@
     .product-card:hover {
       transform: translateY(-5px);
     }
+    
     .product-card > a { /* 使整个卡片可点击 */
         cursor: pointer;
         display: flex;
@@ -660,10 +663,10 @@
             width: 100%;
             min-width: unset;
             flex: none;
+            max-width: unset;
             max-height: 100vh; /* 移除最大高度限制，让内容自适应 */
         }
         .detail-column .product-detail-content {
-            width: 90%; /* 移动端详情页宽度 */
             margin: 20px auto;
         }
     }

@@ -299,6 +299,7 @@
       padding-top: 10px; /* 留出顶部导航栏的空间 */
       flex-grow: 1; /* 占据剩余空间 */
       overflow-y: auto; /* 内容可滚动 */
+      scrollbar-width: thin; /* Firefox 细滚动条 */
     }
 
     .modal-content img {
@@ -381,8 +382,21 @@
 
     /* 媒体查询 */
     @media (min-width: 768px) {
-      .container { max-width: 960px; }
-      .products { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-      .modal-content { max-width: 700px; }
+        .container {
+            min-width: 100%;
+        }
+        .products {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 3fr)); /* 平板三列 */
+        }
+        .modal-content {
+            max-width: 600px;
+        }   
     }
-    @media (min-width: 992px) { .container { max-width: 1200px; } }
+    @media (min-width: 992px) {
+        .container {
+            max-width: 1200px; 
+        }
+              .products {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 8fr));
+      }
+    }
