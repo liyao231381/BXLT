@@ -771,15 +771,20 @@
         .integrated-container { /* 确保容器在移动端也垂直堆叠 */
             grid-template-columns: 1fr; /* 移动端单列布局 */
             grid-template-rows: auto auto auto auto; /* 画廊、详情、管理后台、已选择图片垂直堆叠 */
+            max-height: unset;
+            overflow-y: auto;
         }
         .gallery-column, .detail-column, .admin-column, .selected-images-column {
             width: 100%;
             min-width: unset;
             flex: none;
             max-width: unset;
-            height: auto; /* 移动端高度自适应 */
             border-right: none; /* 移动端无右边框 */
             border-bottom: 1px solid #eee; /* 移动端列之间有下边框 */
+            height: unset;
+            max-height: 100vh; /* 防止过高 */
+            min-height: 0;
+            overflow-y: auto;
         }
         .admin-column, .selected-images-column {
             border-bottom: none; /* 最后一列没有下边框 */
@@ -788,6 +793,6 @@
             margin: 20px auto;
         }
         .selected-images-grid {
-            grid-template-columns: repeat(2, 1fr); /* 移动端2列布局 */
+            grid-template-columns: repeat(3, 1fr); /* 移动端2列布局 */
         }
     }
