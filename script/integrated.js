@@ -106,7 +106,7 @@
                 const productDirPath = file.name.substring(0, file.name.lastIndexOf('/'));
                 if (productMap.has(productDirPath)) {
                     productMap.get(productDirPath).images.push({
-                        src: `${API_BASE_URL}/file/${file.name}`,
+                        src: `${API_BASE_URL}/file/${encodeURIComponent(file.name)}`,
                         fileName: file.name.split('/').pop(),
                         fullPath: file.name // 存储完整路径，用于删除
                     });
