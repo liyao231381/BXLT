@@ -356,7 +356,6 @@
     /* 新增：图片容器与删除按钮样式 */
     .product-detail-content .image-wrapper {
         position: relative;
-        margin-bottom: 15px; /* Spacing between images */
     }
 
     .product-detail-content .image-wrapper img {
@@ -624,52 +623,37 @@
     }
 
     /* 状态消息 */
-    .admin-column #status-message {
-      margin-top: 20px;
-      padding: 10px;
-      border-radius: 4px;
+    #status-message { /* 调整为全局ID选择器，使其浮动在页面右上角 */
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 3000; /* 确保在最上层 */
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background-color: #c3e6cb;
+      border: 1px solid #155724;
       display: none;
+      font-size: 0.95em;
+      font-weight: bold;
+      text-align: center;
+      max-width: 300px; /* 限制宽度 */
+      word-wrap: break-word; /* 自动换行 */
     }
-    .admin-column #status-message.success {
+    #status-message.success {
       background-color: #d4edda;
       color: #155724;
       border: 1px solid #c3e6cb;
     }
-    .admin-column #status-message.error {
+    #status-message.error {
       background-color: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
 
-    /* Admin Selection Status */
+    /* Admin Selection Status - 隐藏此容器 */
     #admin-selection-status {
-        margin-bottom: 20px;
-        padding: 10px;
-        border: 1px dashed #aed6f1; /* 轻蓝色边框 */
-        border-radius: 5px;
-        background-color: #e8f5fd; /* 轻蓝色背景 */
-        font-size: 0.95em;
-        color: #333;
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* 居中内容 */
-        text-align: center;
-    }
-    #admin-selection-status p {
-        margin-bottom: 10px;
-        line-height: 1.4;
-    }
-    #admin-selection-status button {
-        background-color: #dc3545; /* 红色按钮 */
-        color: #fff;
-        padding: 8px 15px;
-        font-size: 0.9em;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    #admin-selection-status button:hover:not(:disabled) {
-        background-color: #c82333;
+        display: none;
     }
 
     /* 媒体查询 */
@@ -727,12 +711,11 @@
     <!-- 右侧：服装管理后台 -->
     <div class="admin-column">
       <div class="admin-container">
-        <h1>服装图片管理后台</h1>
-
-        <!-- 管理后台顶部区域：显示当前选择或提示 -->
-        <div id="admin-selection-status">
-            <p id="admin-selection-message">点击左侧商品选择，上传新图片到该商品；或输入信息创建新商品。</p>
-            <button id="clear-admin-selection-btn" style="display: none;">取消选择</button>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 20px; text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: center; width: 100%;">
+            <button id="clear-admin-selection-btn" style="display: none; margin-right: 15px; padding: 6px 12px; font-size: 0.95em; background-color: #dc3545; color: #fff; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease;">取消选择</button>
+            <h1 style="margin: 0; font-size: 1.2em; color: #333;">服装图片管理后台</h1>
+        </div>
         </div>
 
         <!-- API Token 管理区域 -->
@@ -843,9 +826,10 @@
     const fileListDiv = document.getElementById('file-list');
     const uploadButton = document.getElementById('upload-btn');
     const statusMessageDiv = document.getElementById('status-message');
-    const adminSelectionStatus = document.getElementById('admin-selection-status');
-    const adminSelectionMessage = document.getElementById('admin-selection-message');
-    const clearAdminSelectionBtn = document.getElementById('clear-admin-selection-btn');
+    // 移除 adminSelectionStatus 和 adminSelectionMessage 的 DOM 引用，因为它们已被移除或隐藏
+    // const adminSelectionStatus = document.getElementById('admin-selection-status'); // 已移除
+    // const adminSelectionMessage = document.getElementById('admin-selection-message'); // 已移除
+    const clearAdminSelectionBtn = document.getElementById('clear-admin-selection-btn'); // 按钮仍然存在，只是位置改变
 
     // ==================== 全局状态变量 ====================
     let allProducts = [];
@@ -1119,7 +1103,6 @@
         renderAdminTagsInCreateMode();
 
         setAdminFormState(false); // 解锁表单，并更新拖拽区域的提示信息
-        showStatusMessage('已清除商品选择，可以输入信息创建新商品。', '');
     }
 
     /**
@@ -1192,13 +1175,14 @@
         [styleNameInput, priceInput, newStyleInput, newTagInput, newSeasonInput, newSceneInput].forEach(el => el.disabled = locked);
 
         if (locked && product) {
-            adminSelectionMessage.innerHTML = `当前已选择商品：<strong>${product.name}</strong><br>所有上传的图片将添加到此商品。`;
+            // adminSelectionMessage 已被移除，不再更新其内容
             clearAdminSelectionBtn.style.display = 'inline-block';
             dropAreaMessage.textContent = `拖拽图片或点击选择文件，将上传到“${product.name}”`; // 明确提示上传目标
         } else {
-            adminSelectionMessage.textContent = '点击左侧商品选择，上传新图片到该商品；或输入信息创建新商品。';
+            // adminSelectionMessage 已被移除，不再更新其内容
             clearAdminSelectionBtn.style.display = 'none';
             dropAreaMessage.textContent = '拖拽图片到这里或点击选择文件'; // 恢复默认提示
+            // clearAdminProductSelection 中已调用 showStatusMessage('已清除商品选择，可以输入信息创建新商品。', '');
         }
     }
     
