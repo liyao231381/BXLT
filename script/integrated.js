@@ -390,10 +390,17 @@
         const reader = new FileReader();
         reader.onload = (e) => {
           selectedFilePreviews.push({ file: file, previewUrl: e.target.result });
+          // 按文件名排序
+          // 使用 Intl.Collator 进行数字感知排序
+          const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+          selectedFilePreviews.sort((a, b) => collator.compare(a.file.name, b.file.name));
           renderSelectedFilePreviews();
         };
         reader.readAsDataURL(file);
         filesToUpload.push(file); // 仍然将文件添加到 filesToUpload 数组用于上传
+        // 确保 filesToUpload 数组也按文件名排序
+        const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+        filesToUpload.sort((a, b) => collator.compare(a.name, b.name));
       });
       updateFileListDisplay(); // 更新文件列表显示
     }
@@ -414,14 +421,90 @@
         selectedFilePreviews.forEach((item, index) => {
           const imgItem = document.createElement('div');
           imgItem.className = 'selected-image-item';
+          imgItem.setAttribute('draggable', 'true'); // 使图片可拖拽
+          imgItem.dataset.index = index; // 存储原始索引
           imgItem.innerHTML = `
             <img src="${item.previewUrl}" alt="${item.file.name}" loading="lazy">
+            <div class="image-filename" title="${item.file.name}">${item.file.name}</div>
             <button class="remove-image-btn" data-index="${index}" title="移除此图片">×</button>
           `;
           selectedImagesGrid.appendChild(imgItem);
         });
       }
     }
+
+    let draggedItem = null; // 存储被拖拽的元素
+
+    selectedImagesGrid.addEventListener('dragstart', (e) => {
+      draggedItem = e.target.closest('.selected-image-item');
+      if (draggedItem) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedItem.dataset.index); // 传递索引
+        setTimeout(() => {
+          draggedItem.classList.add('dragging'); // 添加拖拽样式
+        }, 0);
+      }
+    });
+
+    selectedImagesGrid.addEventListener('dragover', (e) => {
+      e.preventDefault(); // 允许放置
+      const targetItem = e.target.closest('.selected-image-item');
+      if (targetItem && targetItem !== draggedItem) {
+        const bounding = targetItem.getBoundingClientRect();
+        const offset = bounding.x + (bounding.width / 2);
+        if (e.clientX > offset) {
+          targetItem.style.borderRight = '2px solid #007bff';
+          targetItem.style.borderLeft = '';
+        } else {
+          targetItem.style.borderLeft = '2px solid #007bff';
+          targetItem.style.borderRight = '';
+        }
+      }
+    });
+
+    selectedImagesGrid.addEventListener('dragleave', (e) => {
+      const targetItem = e.target.closest('.selected-image-item');
+      if (targetItem) {
+        targetItem.style.borderLeft = '';
+        targetItem.style.borderRight = '';
+      }
+    });
+
+    selectedImagesGrid.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const targetItem = e.target.closest('.selected-image-item');
+      if (draggedItem && targetItem && targetItem !== draggedItem) {
+        const draggedIndex = parseInt(draggedItem.dataset.index);
+        const targetIndex = parseInt(targetItem.dataset.index);
+
+        // 移除边框样式
+        targetItem.style.borderLeft = '';
+        targetItem.style.borderRight = '';
+
+        // 重新排序 selectedFilePreviews 数组
+        const [removed] = selectedFilePreviews.splice(draggedIndex, 1);
+        selectedFilePreviews.splice(targetIndex, 0, removed);
+
+        // 重新排序 filesToUpload 数组
+        const [removedFile] = filesToUpload.splice(draggedIndex, 1);
+        filesToUpload.splice(targetIndex, 0, removedFile);
+
+        renderSelectedFilePreviews(); // 重新渲染以更新显示
+        updateFileListDisplay(); // 更新文件列表显示
+      }
+    });
+
+    selectedImagesGrid.addEventListener('dragend', () => {
+      if (draggedItem) {
+        draggedItem.classList.remove('dragging');
+        draggedItem = null;
+      }
+      // 清除所有可能的边框样式
+      document.querySelectorAll('.selected-image-item').forEach(item => {
+        item.style.borderLeft = '';
+        item.style.borderRight = '';
+      });
+    });
 
     dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag-over'); });
     dropArea.addEventListener('dragleave', e => { e.preventDefault(); dropArea.classList.remove('drag-over'); });

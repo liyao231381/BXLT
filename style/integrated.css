@@ -665,6 +665,21 @@
       object-position: center;
     }
 
+    .selected-image-item .image-filename {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.6); /* 半透明黑色背景 */
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 3px 5px;
+      white-space: nowrap; /* 文字仅显示一行 */
+      overflow: hidden; /* 隐藏超出部分 */
+      text-overflow: ellipsis; /* 超出部分显示省略号 */
+      box-sizing: border-box; /* 确保 padding 包含在宽度内 */
+    }
+
     .selected-image-item .remove-image-btn {
       position: absolute;
       top: 5px;
