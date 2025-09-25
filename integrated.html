@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>整合服装管理与展示</title>
+  <style>
+    /* CSS Reset (Simplified) - 基础样式重置 */
+    body, h1, h2, h3, p, ul, li, figure {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      font-size: 100%;
+      font: inherit;
+      vertical-align: baseline;
+      box-sizing: border-box; /* 非常重要：让padding和border包含在元素总宽度和高度内 */
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+      line-height: 1.6;
+      background-color: #f4f4f4;
+      color: #333;
+      display: flex; /* 使用 Flexbox 实现全屏三列布局 */
+      min-height: 100vh; /* 确保页面至少占满视口高度 */
+      overflow-x: hidden; /* 防止水平滚动 */
+    }
+
+    ul {
+      list-style: none; /* 移除列表默认点 */
+    }
+
+    a {
+      text-decoration: none; /* 移除链接下划线 */
+      color: inherit; /* 链接颜色继承父级 */
+    }
+
+    img {
+      max-width: 100%; /* 图片不超过父容器 */
+      display: block; /* 移除图片底部空白 */
+    }
+
+    /* 全局布局 */
+    .integrated-container {
+      display: flex;
+      width: 100%;
+      max-width: 100vw; /* 确保全屏宽度 */
+    }
+
+    /* 左侧画廊 */
+    .gallery-column {
+      flex: 1; /* 占据一份空间 */
+      min-width: 300px; /* 最小宽度 */
+      background-color: #f4f4f4;
+      padding: 5px;
+      overflow-y: auto; /* 允许内容滚动 */
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 中间详情页 */
+    .detail-column {
+      flex: 1; /* 占据一份空间 */
+      min-width: 300px; /* 最小宽度 */
+      background-color: #fff;
+      padding: 5px;
+      overflow-y: auto; /* 允许内容滚动 */
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* 垂直居中内容 */
+      justify-content: flex-start; /* 内容从顶部开始 */
+      position: relative; /* 用于定位详情内容 */
+    }
+    .detail-column .product-detail-content {
+        width: 100%;
+        max-width: 400px; /* 限制详情内容的最大宽度 */
+        aspect-ratio: 9 / 16; /* 移动端比例 */
+        background-color: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+        padding: 10px;
+        display: none; /* 初始隐藏 */
+    }
+    .detail-column .product-detail-content.active {
+        display: block; /* 选中时显示 */
+    }
+    .detail-column .placeholder-message {
+        text-align: center;
+        color: #888;
+        padding: 20px;
+        font-size: 1.1rem;
+        margin-top: 50px;
+    }
+
+
+    /* 右侧管理后台 */
+    .admin-column {
+      flex: 1; /* 占据一份空间 */
+      min-width: 300px; /* 最小宽度 */
+      background-color: #f4f4f4;
+      padding: 20px;
+      overflow-y: auto; /* 允许内容滚动 */
+    }
+    .admin-column .admin-container {
+        max-width: 600px; /* 保持 admin.html 的最大宽度 */
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+
+    /* index.html 样式 */
+    header {
+      background-color: #fff;
+      padding: 15px 0;
+      text-align: center;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* 轻微阴影 */
+      flex-shrink: 0; /* 防止 header 缩小 */
+    }
+
+    header .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    nav {
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+    
+    .filter-group {
+      margin-bottom: 10px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-group strong {
+        color: #555;
+        font-size: 0.9em;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+
+    nav .filter-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    nav a.filter-tag {
+        display: inline-block;
+        padding: 4px 8px;
+        background-color: #e9ecef;
+        color: #495057;
+        border-radius: 5px;
+        font-size: 0.85rem;
+        transition: background-color 0.2s, color 0.2s;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    nav a.filter-tag.active {
+      background-color: #00aaff;
+      color: #fff;
+    }
+    nav a.filter-tag:hover:not(.active) {
+        background-color: #d8dee3;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(45%, 1fr)); /* 移动端双排 */
+      gap: 5px;
+      flex-grow: 1; /* 占据剩余空间 */
+    }
+
+    .product-card {
+      background-color: #fff;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .product-card img {
+      width: 100%;
+      height: auto; 
+      aspect-ratio: 3 / 4; /* 维持 3:4 的宽高比 */
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .product-info {
+        padding: 10px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .product-name-price {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 5px;
+    }
+
+    .product-name-price h2 {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin: 0;
+      flex-grow: 1;
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .product-name-price .price {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #e64a19;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .product-tags, .product-season {
+        font-size: 0.65rem;
+        color: #777;
+        margin-bottom: 3px;
+    }
+    
+    .product-tags span, .product-season span {
+        display: inline-block;
+        margin-right: 5px;
+        padding: 2px 6px;
+        border-radius: 3px;
+    }
+
+    .product-tags span {
+        background-color: #f7f7df;
+    }
+
+    .product-season span {
+        background-color: #e1f5ff;
+    }
+
+    .product-season {
+        margin-top: auto;
+        padding-top: 5px;
+        border-top: 1px dashed #eee;
+    }
+
+    /* 商品详情页样式 (原模态框内容) */
+    .product-detail-content .modal-nav {
+        position: sticky;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        padding: 5px 0;
+    }
+
+    .product-detail-content .modal-nav .back-button {
+        font-size: 1rem;
+        font-weight: normal;
+        color: #333;
+        text-decoration: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        transition: background-color 0.2s;
+        flex-shrink: 0;
+    }
+    .product-detail-content .modal-nav .back-button::before {
+        content: '←';
+        font-size: 1.4rem;
+        line-height: 1;
+    }
+
+    .product-detail-content .modal-nav .product-title {
+        flex-grow: 1;
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .product-detail-content .modal-nav .modal-nav-price {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #e64a19;
+        margin-left: 10px;
+        flex-shrink: 0;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+
+    .product-detail-content .modal-content-inner { /* 区分原 modal-content */
+      max-width: 100%;
+      min-width: 300px;
+      position: relative;
+      margin: 0 auto;
+      padding-top: 10px;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .product-detail-content .modal-content-inner img {
+      width: 100%;
+      height: auto;
+    }
+
+    .product-detail-content .modal-header {
+      margin-bottom: 10px;
+      padding-top: 10px;
+    }
+    .product-detail-content .modal-header h3 {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: #333;
+    }
+    .product-detail-content .modal-price {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #e64a19;
+        margin-top: 5px;
+        margin-bottom: 10px;
+    }
+    .product-detail-content .modal-description {
+        font-size: 0.95rem;
+        color: #555;
+        margin-top: 15px;
+        padding: 10px;
+        border-top: 1px dashed #eee;
+    }
+
+
+    footer {
+      text-align: center;
+      margin-top: 10px;
+      padding: 5px 0;
+      background-color: #ddd;
+      font-size: smaller;
+      font-weight: light;
+      flex-shrink: 0; /* 防止 footer 缩小 */
+    }
+
+    /* 加载状态 */
+    #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        font-size: 1.2rem;
+        color: #007bff;
+        text-align: center;
+    }
+    #loading-overlay span.spinner {
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        border: 0.25rem solid rgba(0,0,0,.15);
+        border-right-color: #007bff;
+        border-radius: 50%;
+        animation: spinner-border .75s linear infinite;
+        margin-bottom: 10px;
+    }
+    @keyframes spinner-border {
+        to { transform: rotate(360deg); }
+    }
+    
+    #loading-overlay.hidden {
+        display: none;
+    }
+
+    /* admin.html 样式 */
+    .admin-column h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* 通用输入框和标签样式 */
+    .admin-column label {
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-bottom: 0;
+      white-space: nowrap;
+      text-align: left !important;
+    }
+    .admin-column input[type="text"],
+    .admin-column input[type="number"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      flex-grow: 1;
+      margin-bottom: 0;
+    }
+
+    /* API Token 部分 */
+    .admin-column .api-token-section {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .admin-column .api-token-section label {
+        margin-right: 10px;
+    }
+    .admin-column .api-token-section input {
+        margin-right: 10px;
+    }
+    .admin-column .api-token-section button {
+        padding: 8px 15px;
+        font-size: 0.9em;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .admin-column .api-token-section button:hover {
+        background-color: #0056b3;
+    }
+
+    /* 通用表单行，用于款式名称和价格 */
+    .admin-column .form-item-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .admin-column .form-item-row label {
+        margin-right: 10px;
+    }
+    .admin-column .form-item-row input {
+        width: 100%;
+    }
+
+    /* 标签分组 */
+    .admin-column .tag-group {
+      margin-bottom: 15px;
+    }
+    .admin-column .tag-group-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .admin-column .tag-group-header label {
+      margin-right: 10px;
+    }
+    .admin-column .tag-group-header input {
+        width: 100%;
+    }
+
+    .admin-column .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px;
+      min-height: 25px;
+    }
+
+    .admin-column .tag-item {
+      background-color: #e9ecef;
+      color: #495057;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .admin-column .tag-item.selected {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    /* 通用按钮样式 */
+    .admin-column button {
+      background-color: #007bff;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .admin-column button:hover {
+      background-color: #0056b3;
+    }
+
+    .admin-column button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    /* 拖拽区域 */
+    .admin-column #drop-area {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 15px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+      transition: background-color 0.2s;
+    }
+    .admin-column #drop-area.drag-over {
+      background-color: #e0e0e0;
+    }
+    .admin-column #drop-area p {
+        margin: 0;
+        color: #666;
+    }
+    .admin-column #file-list {
+        margin-top: 10px;
+        font-size: 0.9em;
+        color: #555;
+        max-height: 100px;
+        overflow-y: auto;
+        width: 100%;
+        text-align: left;
+        padding-left: 10px;
+    }
+    .admin-column #file-list p {
+        margin: 2px 0;
+    }
+
+    /* 状态消息 */
+    .admin-column #status-message {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .admin-column #status-message.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .admin-column #status-message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    /* 媒体查询 */
+    @media (max-width: 768px) {
+        body {
+            flex-direction: column; /* 小屏幕下改为垂直堆叠 */
+        }
+        .gallery-column, .detail-column, .admin-column {
+            width: 100%;
+            min-width: unset;
+            flex: none;
+        }
+        .detail-column .product-detail-content {
+            width: 90%; /* 移动端详情页宽度 */
+            max-width: 400px;
+            margin: 20px auto;
+        }
+    }
+  </style>
+</head>
+<body>
+  <div class="integrated-container">
+    <!-- 左侧：服装展示画廊 -->
+    <div class="gallery-column">
+      <header>
+        <div class="logo"><a href="#">李瑶的服装店</a></div>
+        <nav id="main-nav">
+          <div id="filter-style" class="filter-group"><strong>款式:</strong><div class="filter-tags"></div></div>
+          <div id="filter-tag" class="filter-group"><strong>标签:</strong><div class="filter-tags"></div></div>
+          <div id="filter-season" class="filter-group"><strong>季节:</strong><div class="filter-tags"></div></div>
+          <div id="filter-scene" class="filter-group"><strong>场景:</strong><div class="filter-tags"></div></div>
+        </nav>
+      </header>
+
+      <main>
+          <section id="products-list" class="products">
+              <!-- 商品卡片将动态加载到这里 -->
+          </section>
+          <p id="no-products-message" style="grid-column: 1 / -1; text-align: center; color: #888; display: none; padding: 40px 0;">未找到匹配的商品。</p>
+      </main>
+
+      <footer>
+        <p>© 2025 李瑶的服装店. All rights reserved.</p>
+      </footer>
+    </div>
+
+    <!-- 中间：商品详情页 (固定布局) -->
+    <div class="detail-column">
+        <div id="product-detail-view" class="product-detail-content">
+            <!-- 商品详情将动态加载到这里 -->
+        </div>
+        <p class="placeholder-message" id="detail-placeholder">点击左侧商品查看详情</p>
+    </div>
+
+    <!-- 右侧：服装管理后台 -->
+    <div class="admin-column">
+      <div class="admin-container">
+        <h1>服装图片管理后台</h1>
+
+        <div class="api-token-section">
+            <label for="api-token">API Token:</label>
+            <input type="text" id="api-token" placeholder="输入你的 API Token">
+            <button onclick="saveApiToken()">保存</button>
+        </div>
+
+        <div class="form-item-row">
+          <label for="style-name">款式名称:</label>
+          <input type="text" id="style-name" placeholder="例如：新款背心">
+        </div>
+
+        <div class="form-item-row">
+          <label for="price">价格:</label>
+          <input type="number" id="price" placeholder="例如：99">
+        </div>
+
+        <!-- 款式 -->
+        <div class="tag-group">
+          <div class="tag-group-header">
+            <label>款式:</label>
+            <input type="text" id="new-style" placeholder="添加新款式，按回车确认">
+          </div>
+          <div id="style-list" class="tag-list">
+            <!-- 现有款式会动态添加到这里 -->
+          </div>
+        </div>
+
+        <!-- 标签 -->
+        <div class="tag-group">
+          <div class="tag-group-header">
+            <label>标签:</label>
+            <input type="text" id="new-tag" placeholder="添加新标签，按回车确认">
+          </div>
+          <div id="tag-list" class="tag-list">
+            <!-- 现有标签会动态添加到这里 -->
+          </div>
+        </div>
+
+        <!-- 季节 -->
+        <div class="tag-group">
+          <div class="tag-group-header">
+            <label>适用季节:</label>
+            <input type="text" id="new-season" placeholder="添加新季节，按回车确认">
+          </div>
+          <div id="season-list" class="tag-list">
+            <!-- 现有季节会动态添加到这里 -->
+          </div>
+        </div>
+
+        <!-- 场景 -->
+        <div class="tag-group">
+          <div class="tag-group-header">
+            <label>适用场景:</label>
+            <input type="text" id="new-scene" placeholder="添加新场景，按回车确认">
+          </div>
+          <div id="scene-list" class="tag-list">
+            <!-- 现有场景会动态添加到这里 -->
+          </div>
+        </div>
+
+        <label for="image">选择图片 (可拖拽):</label>
+        <input type="file" id="image" accept="image/*" multiple style="display: none;" onchange="handleFileSelect(this.files)">
+        <div id="drop-area">
+          <p>拖拽图片到这里</p>
+          <p>或点击选择文件</p>
+          <div id="file-list"></div>
+        </div>
+
+        <button id="upload-btn" onclick="uploadImages()">上传图片</button>
+
+        <div id="status-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-overlay" class="hidden">
+    <span class="spinner"></span>
+    加载中...
+  </div>
+
+  <script>
+    // ==================== 全局常量和变量 ====================
+    const API_BASE_URL = 'https://img.liyao.sbs';
+    const API_TOKEN_KEY = 'imgbed_api_token'; // 用于 localStorage 的 key
+
+    let allProducts = []; // 存储所有服装商品数据
+    let activeFilters = { // 当前激活的筛选器
+        style: new Set(),
+        tag: new Set(),
+        season: new Set(),
+        scene: new Set()
+    };
+
+    // Admin 页面相关变量
+    let existingStyles = [];
+    let existingTags = [];
+    let existingSeasons = [];
+    let existingScenes = [];
+    
+    let selectedStyles = new Set();
+    let selectedTags = new Set();
+    let selectedSeasons = new Set();
+    let selectedScenes = new Set();
+
+    let filesToUpload = [];
+    const fileListDiv = document.getElementById('file-list');
+    const uploadButton = document.getElementById('upload-btn');
+    const detailView = document.getElementById('product-detail-view');
+    const detailPlaceholder = document.getElementById('detail-placeholder');
+
+
+    // ==================== 数据获取与解析 (Gallery) ====================
+    async function fetchAllProducts() {
+        showLoading();
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/manage/list?dir=服装&count=-1&recursive=true`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem(API_TOKEN_KEY)}` }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`获取商品列表失败：${response.status} - ${errorData.error || response.statusText}`);
+            }
+
+            const data = await response.json();
+            const { directories = [], files = [] } = data;
+            const productMap = new Map();
+
+            directories.forEach(dirPath => {
+                const folderName = dirPath.split('/').pop();
+                const parsedInfo = parseFolderName(folderName);
+                if (parsedInfo) {
+                    productMap.set(dirPath, {
+                        id: dirPath.replace(/[\/\.]/g, '_').replace(/-/g, '__'),
+                        path: dirPath,
+                        ...parsedInfo,
+                        price: parseFloat(parsedInfo.price.replace('¥', '')) || 0,
+                        images: []
+                    });
+                }
+            });
+
+            files.forEach(file => {
+                const productDirPath = file.name.substring(0, file.name.lastIndexOf('/'));
+                if (productMap.has(productDirPath)) {
+                    productMap.get(productDirPath).images.push({
+                        src: `${API_BASE_URL}/file/${file.name}`,
+                        fileName: file.name.split('/').pop()
+                    });
+                }
+            });
+
+            allProducts = Array.from(productMap.values()).filter(p => p.images.length > 0);
+            allProducts.forEach(p => p.images.sort((a, b) => a.fileName.localeCompare(b.fileName)));
+
+            populateFilters();
+            applyFilters();
+        } catch (error) {
+            console.error("加载商品数据失败:", error);
+            alert(`加载商品数据失败：${error.message}`);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function parseFolderName(folderName) {
+        const parts = folderName.split('-');
+        if (parts.length < 6 || isNaN(parseInt(parts[0]))) return null;
+
+        return {
+            price: `¥${parts[0]}`,
+            styles: parts[1].split('_').filter(Boolean),
+            tags: parts[2].split('_').filter(Boolean),
+            seasons: parts[3].split('_').filter(Boolean),
+            scenes: parts[4].split('_').filter(Boolean),
+            name: parts.slice(5).join('-')
+        };
+    }
+
+    // ==================== 筛选器逻辑 (Gallery) ====================
+    function populateFilters() {
+        const filters = { style: new Set(), tag: new Set(), season: new Set(), scene: new Set() };
+        allProducts.forEach(p => {
+            p.styles.forEach(s => filters.style.add(s));
+            p.tags.forEach(t => filters.tag.add(t));
+            p.seasons.forEach(s => filters.season.add(s));
+            p.scenes.forEach(s => filters.scene.add(s));
+        });
+
+        for (const type in filters) {
+            const container = document.querySelector(`#filter-${type} .filter-tags`);
+            if (container) {
+                renderFilterGroup(container, Array.from(filters[type]).sort(), type);
+            }
+        }
+    }
+
+    function renderFilterGroup(container, items, filterType) {
+        container.innerHTML = '';
+        ['全部', ...items].forEach(item => {
+            const tagLink = document.createElement('a');
+            tagLink.className = 'filter-tag';
+            tagLink.textContent = item;
+            
+            if (item === '全部' && activeFilters[filterType].size === 0) {
+                tagLink.classList.add('active');
+            } else if (activeFilters[filterType].has(item)) {
+                tagLink.classList.add('active');
+            }
+
+            tagLink.onclick = () => {
+                if (item === '全部') {
+                    activeFilters[filterType].clear();
+                } else {
+                    activeFilters[filterType].has(item) ?
+                        activeFilters[filterType].delete(item) :
+                        activeFilters[filterType].add(item);
+                }
+                applyFilters();
+                populateFilters();
+            };
+            container.appendChild(tagLink);
+        });
+    }
+
+    function applyFilters() {
+        const filteredProducts = allProducts.filter(product => {
+            return Object.entries(activeFilters).every(([type, filterSet]) => {
+                if (filterSet.size === 0) {
+                    return true;
+                }
+                const productAttributes = product[`${type}s`];
+                return productAttributes.some(attribute => filterSet.has(attribute));
+            });
+        });
+        renderProducts(filteredProducts);
+    }
+
+
+    // ==================== 渲染逻辑 (Gallery & Detail) ====================
+    function renderProducts(products) {
+        const productsList = document.getElementById('products-list');
+        const noProductsMessage = document.getElementById('no-products-message');
+        productsList.innerHTML = '';
+
+        noProductsMessage.style.display = products.length === 0 ? 'block' : 'none';
+
+        products.forEach(product => {
+            const productCard = document.createElement('article');
+            productCard.className = 'product-card';
+            productCard.innerHTML = `
+                <a href="#" onclick="event.preventDefault(); showProductDetail('${product.id}');">
+                    <img src="${product.images.length > 0 ? product.images[0].src : ''}" alt="${product.name}" loading="lazy">
+                    <div class="product-info">
+                        <div class="product-name-price">
+                            <p class="price">¥${product.price}</p>
+                            <h2>${product.name}</h2>
+                        </div>
+                        <div class="product-season">${product.seasons.length > 0 ?  product.seasons.map(s => `<span>${s}</span>`).join('') : ''}</div>
+                        <div class="product-tags">${product.tags.length > 0 ?  product.tags.map(t => `<span>${t}</span>`).join('') : ''}</div>
+                    </div>
+                </a>
+            `;
+            productsList.appendChild(productCard);
+        });
+        // 每次重新渲染商品列表时，如果当前有详情页显示，需要确保它仍然显示正确的商品
+        // 或者在没有商品时隐藏详情页
+        if (products.length === 0) {
+            hideProductDetail();
+        } else {
+            const currentDetailId = detailView.dataset.productId;
+            if (currentDetailId && !products.some(p => p.id === currentDetailId)) {
+                hideProductDetail(); // 如果当前详情页的商品不在过滤后的列表中，则隐藏
+            }
+        }
+    }
+
+    function showProductDetail(productId) {
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) {
+            console.error('未找到商品详情:', productId);
+            return;
+        }
+
+        const imagesHtml = product.images.map(img => `<img src="${img.src}" alt="${product.name}" loading="lazy">`).join('');
+        
+        detailView.innerHTML = `
+            <div class="modal-nav">
+                <a href="#" class="back-button" onclick="hideProductDetail()"></a>
+                <div class="product-title">
+                    ${product.name}
+                </div>
+                <div class="modal-nav-price">¥${product.price}</div>
+            </div>
+            <div class="modal-content-inner">
+                ${imagesHtml}
+                <div class="modal-header">
+                    <!-- <h3>${product.name}</h3> -->
+                    <!-- <p class="modal-price">¥${product.price}</p> -->
+                </div>
+                <p class="modal-description">
+                    ${product.styles.length > 0 ? `<strong>款式:</strong> ${product.styles.join(', ')}<br>` : ''}
+                    ${product.tags.length > 0 ? `<strong>标签:</strong> ${product.tags.join(', ')}<br>` : ''}
+                    ${product.seasons.length > 0 ? `<strong>季节:</strong> ${product.seasons.join(', ')}<br>` : ''}
+                    ${product.scenes.length > 0 ? `<strong>场景:</strong> ${product.scenes.join(', ')}` : ''}
+                </p>
+            </div>
+        `;
+        detailView.classList.add('active');
+        detailView.dataset.productId = productId; // 存储当前显示的商品ID
+        detailPlaceholder.style.display = 'none';
+    }
+
+    function hideProductDetail() {
+        detailView.classList.remove('active');
+        detailView.innerHTML = '';
+        delete detailView.dataset.productId;
+        detailPlaceholder.style.display = 'block';
+    }
+
+
+    // ==================== API Token 管理 (Admin) ====================
+    function loadApiToken() {
+      const storedToken = localStorage.getItem(API_TOKEN_KEY);
+      if (storedToken) {
+        document.getElementById('api-token').value = storedToken;
+        fetchAndPopulateTags();
+      }
+    }
+
+    function saveApiToken() {
+      const apiToken = document.getElementById('api-token').value;
+      if (apiToken) {
+        localStorage.setItem(API_TOKEN_KEY, apiToken);
+        showStatusMessage('API Token 已保存', 'success');
+        fetchAndPopulateTags();
+      } else {
+        localStorage.removeItem(API_TOKEN_KEY);
+        showStatusMessage('API Token 不能为空，已清除保存的 Token', 'error');
+      }
+    }
+
+    // ==================== 动态标签管理 (Admin) ====================
+    async function fetchAndPopulateTags() {
+      const apiToken = document.getElementById('api-token').value;
+      if (!apiToken) {
+        return;
+      }
+
+      showStatusMessage('正在加载现有标签...', '');
+      const tagFetchStartTime = Date.now();
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/manage/list?dir=服装&count=-1&recursive=false`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`加载标签失败，状态码：${response.status}，信息：${errorData.error || errorData.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        existingStyles = [];
+        existingTags = [];
+        existingSeasons = [];
+        existingScenes = [];
+
+        const uniqueStyles = new Set();
+        const uniqueTags = new Set();
+        const uniqueSeasons = new Set();
+        const uniqueScenes = new Set();
+
+        if (data.directories && data.directories.length > 0) {
+          data.directories.forEach(dirPath => {
+            const folderName = dirPath.split('/').pop();
+
+            const parts = folderName.split('-');
+            if (parts.length >= 5) {
+              const stylesPart = parts[1];
+              const tagsPart = parts[2];
+              const seasonsPart = parts[3];
+              const scenesPart = parts[4];
+
+              stylesPart?.split('_').filter(t => t).forEach(t => uniqueStyles.add(t));
+              tagsPart?.split('_').filter(t => t).forEach(t => uniqueTags.add(t));
+              seasonsPart?.split('_').filter(t => t).forEach(t => uniqueSeasons.add(t));
+              scenesPart?.split('_').filter(t => t).forEach(t => uniqueScenes.add(t));
+            }
+          });
+        }
+        
+        existingStyles = Array.from(uniqueStyles).sort();
+        existingTags = Array.from(uniqueTags).sort();
+        existingSeasons = Array.from(uniqueSeasons).sort();
+        existingScenes = Array.from(uniqueScenes).sort();
+
+        renderTagList('style-list', existingStyles, selectedStyles, tag => toggleTag(tag, selectedStyles));
+        renderTagList('tag-list', existingTags, selectedTags, tag => toggleTag(tag, selectedTags));
+        renderTagList('season-list', existingSeasons, selectedSeasons, tag => toggleTag(tag, selectedSeasons));
+        renderTagList('scene-list', existingScenes, selectedScenes, tag => toggleTag(tag, selectedScenes));
+
+        const tagFetchTime = Date.now() - tagFetchStartTime;
+        showStatusMessage(`标签加载完成 (${existingStyles.length} 款式, ${existingTags.length} 标签, ${existingSeasons.length} 季节, ${existingScenes.length} 场景)。耗时 ${tagFetchTime}ms`, 'success');
+
+      } catch (error) {
+        console.error('加载标签出错:', error);
+        showStatusMessage(`加载现有标签出错：${error.message}，请检查 API Token 是否正确或网络连接`, 'error');
+      }
+    }
+
+    function renderTagList(tagListId, tagsData, selectedTagsSet, onTagClick) {
+      const tagListDiv = document.getElementById(tagListId);
+      tagListDiv.innerHTML = '';
+
+      tagsData.forEach(tag => {
+        const tagItem = document.createElement('div');
+        tagItem.classList.add('tag-item');
+        tagItem.textContent = tag;
+        if (selectedTagsSet.has(tag)) {
+          tagItem.classList.add('selected');
+        }
+
+        tagItem.addEventListener('click', () => {
+          onTagClick(tag);
+          tagItem.classList.toggle('selected', selectedTagsSet.has(tag));
+        });
+
+        tagListDiv.appendChild(tagItem);
+      });
+    }
+
+    function addNewTag(tagInputId, tagListId, existingTagsArray, selectedTagsSet) {
+      const newTagInput = document.getElementById(tagInputId);
+      const newTag = newTagInput.value.trim();
+
+      if (newTag) {
+        if (!existingTagsArray.includes(newTag)) {
+          existingTagsArray.push(newTag);
+          existingTagsArray.sort();
+        }
+        if (!selectedTagsSet.has(newTag)) {
+            selectedTagsSet.add(newTag);
+        }
+        renderTagList(tagListId, existingTagsArray, selectedTagsSet, tag => {
+          toggleTag(tag, selectedTagsSet);
+        });
+      }
+      newTagInput.value = '';
+    }
+
+    function toggleTag(tag, selectedTagsSet) {
+      if (selectedTagsSet.has(tag)) {
+        selectedTagsSet.delete(tag);
+      } else {
+        selectedTagsSet.add(tag);
+      }
+    }
+
+    document.getElementById('new-style').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-style', 'style-list', existingStyles, selectedStyles);
+      }
+    });
+    document.getElementById('new-tag').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-tag', 'tag-list', existingTags, selectedTags);
+      }
+    });
+    document.getElementById('new-season').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-season', 'season-list', existingSeasons, selectedSeasons);
+      }
+    });
+    document.getElementById('new-scene').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        addNewTag('new-scene', 'scene-list', existingScenes, selectedScenes);
+      }
+    });
+
+    // ==================== 文件选择与拖拽 (Admin) ====================
+    function handleFileSelect(files) {
+      filesToUpload.push(...Array.from(files));
+      updateFileListDisplay();
+    }
+
+    function updateFileListDisplay() {
+        if (filesToUpload.length > 0) {
+            fileListDiv.innerHTML = `<p>已选择 ${filesToUpload.length} 个文件：</p>`;
+            filesToUpload.forEach((file, index) => {
+                const p = document.createElement('p');
+                p.textContent = `${index + 1}. ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                fileListDiv.appendChild(p);
+            });
+            uploadButton.disabled = false;
+        } else {
+            fileListDiv.innerHTML = '<p>无文件待上传</p>';
+            uploadButton.disabled = true;
+        }
+    }
+
+    const dropArea = document.getElementById('drop-area');
+
+    dropArea.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      dropArea.classList.add('drag-over');
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    dropArea.addEventListener('dragleave', function (e) {
+      e.preventDefault();
+      dropArea.classList.remove('drag-over');
+    });
+
+    dropArea.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropArea.classList.remove('drag-over');
+      handleFileSelect(e.dataTransfer.files);
+    });
+
+    dropArea.addEventListener('click', function () {
+      document.getElementById('image').click();
+    });
+
+    // ==================== 批量图片上传 (Admin) ====================
+   async function uploadSingleImage(file, apiToken, styleName, price, styles, tags, seasons, scenes) {
+      const styleStr = Array.from(styles).join('_');
+      const tagStr = Array.from(tags).join('_');
+      const seasonStr = Array.from(seasons).join('_');
+      const sceneStr = Array.from(scenes).join('_');
+
+      if (!price || styleStr === '' || tagStr === '' || seasonStr === '' || sceneStr === '' || !styleName) {
+        showStatusMessage(`文件 "${file.name}" 上传失败：请确保所有标签类别至少选中一项，并填写款式名称和价格。`, 'error');
+        return false;
+      }
+
+      const uploadFolder = `服装/${price}-${styleStr}-${tagStr}-${seasonStr}-${sceneStr}-${styleName}`;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        showStatusMessage(`正在上传 "${file.name}"...`, '');
+        const response = await fetch(`${API_BASE_URL}/upload?uploadFolder=${encodeURIComponent(uploadFolder)}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`上传 "${file.name}" 失败，状态码：${response.status}，信息：${errorData.error || errorData.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data && data[0] && data[0].src) {
+            showStatusMessage(`"${file.name}" 上传成功！链接片段：${data[0].src}`, 'success');
+            return true;
+        } else {
+          showStatusMessage(`"${file.name}" 上传成功，但未能获取图片链接。响应: ${JSON.stringify(data)}`, 'success');
+          return true;
+        }
+
+      } catch (error) {
+        console.error(`"${file.name}" 上传出错:`, error);
+        showStatusMessage(`"${file.name}" 上传出错：${error.message}`, 'error');
+        return false;
+      }
+    }
+
+    async function uploadImages() {
+      const apiToken = document.getElementById('api-token').value;
+      const styleName = document.getElementById('style-name').value;
+      const price = document.getElementById('price').value;
+
+      if (!apiToken || !styleName || !price || filesToUpload.length === 0) {
+        showStatusMessage('请填写所有必填字段（API Token、款式名称、价格），并选择至少一个文件进行上传', 'error');
+        return;
+      }
+       if (selectedStyles.size === 0 || selectedTags.size === 0 || selectedSeasons.size === 0 || selectedScenes.size === 0) {
+           showStatusMessage('请确保所有标签类别（款式、标签、季节、场景）至少选中一项', 'error');
+           return;
+       }
+
+      uploadButton.disabled = true;
+      uploadButton.textContent = '上传中...';
+      disableInputs(true);
+
+      let uploadSuccessCount = 0;
+      let uploadFailCount = 0;
+
+      const currentFilesToUpload = [...filesToUpload];
+      filesToUpload = [];
+      updateFileListDisplay();
+
+      for (const file of currentFilesToUpload) {
+        const success = await uploadSingleImage(file, apiToken, styleName, price, selectedStyles, selectedTags, selectedSeasons, selectedScenes);
+        if (success) {
+          uploadSuccessCount++;
+        } else {
+          uploadFailCount++;
+        }
+      }
+
+      let finalMessage = `所有文件上传完成。成功：${uploadSuccessCount} 个，失败：${uploadFailCount} 个。`;
+      if (uploadFailCount > 0) {
+          showStatusMessage(finalMessage, 'error');
+      } else {
+          showStatusMessage(finalMessage, 'success');
+          document.getElementById('style-name').value = '';
+          document.getElementById('price').value = '';
+          selectedStyles.clear();
+          selectedTags.clear();
+          selectedSeasons.clear();
+          selectedScenes.clear();
+          renderTagList('style-list', existingStyles, selectedStyles, tag => toggleTag(tag, selectedStyles));
+          renderTagList('tag-list', existingTags, selectedTags, tag => toggleTag(tag, selectedTags));
+          renderTagList('season-list', existingSeasons, selectedSeasons, tag => toggleTag(tag, selectedSeasons));
+          renderTagList('scene-list', existingScenes, selectedScenes, tag => toggleTag(tag, selectedScenes));
+      }
+
+      uploadButton.disabled = false;
+      uploadButton.textContent = '上传图片';
+      disableInputs(false);
+      fetchAndPopulateTags(); // 刷新标签列表
+      fetchAllProducts(); // 刷新画廊
+    }
+
+    function disableInputs(disable) {
+      document.getElementById('api-token').disabled = disable;
+      document.querySelector('.api-token-section button').disabled = disable;
+      document.getElementById('style-name').disabled = disable;
+      document.getElementById('price').disabled = disable;
+      document.getElementById('new-style').disabled = disable;
+      document.getElementById('new-tag').disabled = disable;
+      document.getElementById('new-season').disabled = disable;
+      document.getElementById('new-scene').disabled = disable;
+      document.getElementById('drop-area').style.pointerEvents = disable ? 'none' : 'auto';
+      document.getElementById('drop-area').style.opacity = disable ? 0.6 : 1;
+
+      document.querySelectorAll('.tag-item').forEach(item => {
+          item.style.pointerEvents = disable ? 'none' : 'auto';
+          item.style.opacity = disable ? 0.6 : 1;
+      });
+    }
+
+    // ==================== 状态消息显示 (Admin) ====================
+    function showStatusMessage(message, type) {
+      const statusMessageDiv = document.getElementById('status-message');
+      statusMessageDiv.textContent = message;
+      statusMessageDiv.className = '';
+      if (type) statusMessageDiv.classList.add(type);
+      statusMessageDiv.style.display = 'block';
+    }
+
+    // ==================== 通用函数与事件监听 ====================
+    function showLoading() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    }
+
+    function resetAndLoadGallery() {
+        activeFilters = { style: new Set(), tag: new Set(), season: new Set(), scene: new Set() };
+        fetchAllProducts();
+        hideProductDetail();
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        loadApiToken(); // 加载 Admin 的 API Token
+        updateFileListDisplay(); // 初始化 Admin 的文件列表显示
+        resetAndLoadGallery(); // 加载 Gallery 的商品数据
+
+        document.querySelector('.logo a').addEventListener('click', (event) => {
+            event.preventDefault();
+            resetAndLoadGallery();
+        });
+    });
+  </script>
+</body>
+</html>
