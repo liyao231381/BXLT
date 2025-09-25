@@ -46,23 +46,27 @@
       display: flex;
       width: 100%;
       max-width: 100vw; /* 确保全屏宽度 */
+      max-height: 100vh; /* 确保全屏高度 */
     }
 
     /* 左侧画廊列 */
     .gallery-column {
       flex: 1; /* 占据一份空间 */
       min-width: 300px; /* 最小宽度 */
+      max-height: 100vh; /* 最大高度为视口高度 */
       background-color: #f4f4f4;
       padding: 5px;
       overflow-y: auto; /* 允许内容滚动 */
       display: flex;
       flex-direction: column;
+      scrollbar-width: thin;
     }
 
     /* 中间详情页列 */
     .detail-column {
       flex: 1; /* 占据一份空间 */
       min-width: 300px; /* 最小宽度 */
+      max-height: 100vh; /* 最大高度为视口高度 */
       background-color: #fff;
       padding: 5px;
       overflow-y: auto; /* 允许内容滚动 */
@@ -72,17 +76,16 @@
       align-items: flex-start; /* 内容从左上角开始 */
       justify-content: flex-start; /* 内容从顶部开始 */
       position: relative; /* 用于定位详情内容 */
+      scrollbar-width: thin;
     }
     .detail-column .product-detail-content {
         width: 100%;
-        max-width: 400px; /* 限制详情内容的最大宽度 */
-        aspect-ratio: 9 / 16; /* 移动端比例 */
         background-color: #fff;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         overflow-y: auto;
-        padding: 10px;
         display: none; /* 初始隐藏 */
         margin: 0 auto; /* 居中显示 */
+        overflow-y: auto;
     }
     .detail-column .product-detail-content.active {
         display: block; /* 选中时显示 */
@@ -101,16 +104,16 @@
     .admin-column {
       flex: 1; /* 占据一份空间 */
       min-width: 300px; /* 最小宽度 */
+      max-height: 100vh; /* 最大高度为视口高度 */
       background-color: #f4f4f4;
-      padding: 20px;
       overflow-y: auto; /* 允许内容滚动 */
+      scrollbar-width: none; /* Firefox 隐藏滚动条 */
     }
     .admin-column .admin-container {
         max-width: 600px; /* 保持 admin.html 的最大宽度 */
         margin: 0 auto;
         background-color: #fff;
         padding: 20px;
-        border-radius: 8px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
@@ -350,10 +353,55 @@
       overflow-y: auto;
     }
 
-    .product-detail-content .modal-content-inner img {
+    /* 新增：图片容器与删除按钮样式 */
+    .product-detail-content .image-wrapper {
+        position: relative;
+        margin-bottom: 15px; /* Spacing between images */
+    }
+
+    .product-detail-content .image-wrapper img {
       width: 100%;
       height: auto;
     }
+
+    .product-detail-content .delete-image-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(220, 53, 69, 0.8); /* Red, slightly transparent */
+        color: white;
+        border: none;
+        border-radius: 50%; /* Circular button */
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+        opacity: 0; /* Hidden by default */
+        transition: opacity 0.2s ease-in-out;
+        z-index: 10; /* Ensure button is above image */
+        /* display: none; */ /* 初始隐藏，通过 JS 控制 visible/display */
+    }
+
+    .product-detail-content .image-wrapper:hover .delete-image-btn {
+        opacity: 1; /* Show on hover */
+    }
+
+    /* Controlled by JS to always show if API token is present */
+    .product-detail-content .delete-image-btn.visible {
+        opacity: 1;
+    }
+
+    .product-detail-content .delete-image-btn::before {
+        content: '×'; /* Times symbol for close/delete */
+        line-height: 1; /* Center vertically */
+    }
+    .product-detail-content .delete-image-btn:hover {
+        background-color: #c82333; /* Darker red on hover */
+    }
+
     .product-detail-content .modal-description {
         font-size: 0.95rem;
         color: #555;
@@ -834,8 +882,16 @@
     async function fetchAllProducts() {
         showLoading();
         try {
-            const apiToken = localStorage.getItem(API_TOKEN_KEY);
-            if (!apiToken) throw new Error("API Token 未设置。请在管理后台输入并保存。");
+            const apiToken = getApiToken(); // 尝试获取API Token
+            if (!apiToken) {
+                // 如果没有API Token，显示错误信息但不阻止页面加载其他内容
+                showStatusMessage("API Token 未设置。请在管理后台输入并保存，方可进行数据管理、上传及删除操作。", 'error');
+                productsList.innerHTML = '';
+                noProductsMessage.style.display = 'block';
+                noProductsMessage.textContent = '请设置API Token以加载商品数据。';
+                hideLoading();
+                return;
+            }
             
             const response = await fetch(`${API_BASE_URL}/api/manage/list?dir=服装&count=-1&recursive=true`, {
                 headers: { 'Authorization': `Bearer ${apiToken}` }
@@ -856,7 +912,7 @@
                 if (parsedInfo) {
                     productMap.set(dirPath, {
                         id: dirPath.replace(/[\/\.]/g, '_').replace(/-/g, '__'),
-                        path: dirPath,
+                        path: dirPath, // 完整路径，用于上传/删除
                         ...parsedInfo,
                         priceNum: parseFloat(parsedInfo.price.replace('¥', '')) || 0,
                         images: []
@@ -869,7 +925,8 @@
                 if (productMap.has(productDirPath)) {
                     productMap.get(productDirPath).images.push({
                         src: `${API_BASE_URL}/file/${file.name}`,
-                        fileName: file.name.split('/').pop()
+                        fileName: file.name.split('/').pop(),
+                        fullPath: file.name // 存储完整路径，用于删除
                     });
                 }
             });
@@ -993,7 +1050,14 @@
 
     function displayProductDetails(product) {
         // 1. 显示详情
-        const imagesHtml = product.images.map(img => `<img src="${img.src}" alt="${product.name}" loading="lazy">`).join('');
+        const apiTokenExists = getApiToken() !== null;
+        let imagesHtml = product.images.map(img => `
+            <div class="image-wrapper">
+                <img src="${img.src}" alt="${product.name} - ${img.fileName}" loading="lazy">
+                <button class="delete-image-btn ${apiTokenExists ? 'visible' : ''}" data-image-path="${img.fullPath}" title="删除此图片"></button>
+            </div>
+        `).join('');
+
         detailView.innerHTML = `
             <div class="modal-nav">
                 <a href="#" class="back-button" onclick="hideProductDetail()"></a>
@@ -1154,8 +1218,9 @@
     dropArea.addEventListener('click', () => document.getElementById('image').click());
 
     async function uploadImages() {
-        const apiToken = apiTokenInput.value.trim();
-        if (!apiToken) { showStatusMessage('请填写 API Token！', 'error'); return; }
+        const apiToken = getApiToken();
+        if (!apiToken) { return; } // getApiToken() 会显示错误信息
+
         if (filesToUpload.length === 0) { showStatusMessage('请选择要上传的文件！', 'error'); return; }
 
         let uploadFolder = '';
@@ -1172,7 +1237,7 @@
             const seasons = Array.from(createModeSelectedTags.seasons).join('_');
             const scenes = Array.from(createModeSelectedTags.scenes).join('_');
 
-            if (!name || !price || !styles || !tags || !seasons || !scenes) {
+            if (!name || !price || styles==='' || tags==='' || seasons==='' || scenes==='') { // 检查标签是否为空字符串
                 showStatusMessage('创建新商品时，名称、价格和各类标签都必须填写/选择。', 'error');
                 return;
             }
@@ -1219,6 +1284,47 @@
         }
     }
 
+    /**
+     * 删除指定路径的图片
+     * @param {string} imagePath - 图片在ImgBed中的完整路径，例如 "服装/100-style_A-tag_X/image.jpg"
+     */
+    async function deleteImage(imagePath) {
+        const apiToken = getApiToken();
+        if (!apiToken) {
+            return; // 错误信息已由 getApiToken() 显示
+        }
+
+        if (!confirm(`确定要删除图片：${imagePath.split('/').pop()} 吗？此操作不可撤销！`)) {
+            return;
+        }
+
+        showLoading();
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/manage/delete/${encodeURIComponent(imagePath)}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${apiToken}` }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`删除文件失败：${response.status} - ${errorData.error || response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                showStatusMessage(`图片 "${imagePath.split('/').pop()}" 删除成功！`, 'success');
+                resetAndLoad(); // 删除成功后刷新所有数据和视图
+            } else {
+                throw new Error(result.error || '未知删除错误');
+            }
+        } catch (error) {
+            console.error("删除图片失败:", error);
+            showStatusMessage(`删除图片失败: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
 
     // ==================== 通用函数与事件监听 ====================
     function showLoading() { if (loadingOverlay) loadingOverlay.classList.remove('hidden'); }
@@ -1227,7 +1333,24 @@
       statusMessageDiv.textContent = message;
       statusMessageDiv.className = type;
       statusMessageDiv.style.display = 'block';
+      setTimeout(() => { // 消息显示3秒后自动消失
+          statusMessageDiv.style.display = 'none';
+      }, 3000);
     }
+    
+    /**
+     * 获取存储的API Token
+     * @returns {string|null} API Token 或 null（如果未设置或空）
+     */
+    function getApiToken() {
+        const token = localStorage.getItem(API_TOKEN_KEY);
+        if (!token || token.trim() === '') {
+            // showStatusMessage('API Token 未设置。请在管理后台输入并保存。', 'error'); // 不在这里显示，由fetchAllProducts处理
+            return null;
+        }
+        return token.trim();
+    }
+
 
     function resetAndLoad() {
         activeFilters = { style: new Set(), tag: new Set(), season: new Set(), scene: new Set() };
@@ -1245,13 +1368,20 @@
         document.querySelector('.logo a').addEventListener('click', e => { e.preventDefault(); resetAndLoad(); });
         clearAdminSelectionBtn.addEventListener('click', clearAdminProductSelection);
         apiTokenSaveButton.addEventListener('click', () => {
-            localStorage.setItem(API_TOKEN_KEY, apiTokenInput.value);
-            showStatusMessage('API Token 已保存。', 'success');
-            resetAndLoad(); // 保存后立即刷新，重新加载数据
+            const tokenValue = apiTokenInput.value.trim();
+            if (tokenValue) {
+                localStorage.setItem(API_TOKEN_KEY, tokenValue);
+                showStatusMessage('API Token 已保存。', 'success');
+                resetAndLoad(); // 保存后立即刷新，重新加载数据
+            } else {
+                localStorage.removeItem(API_TOKEN_KEY); // 清除空的 token
+                showStatusMessage('API Token 已清空。', 'success');
+                resetAndLoad(); // 保存后立即刷新，重新加载数据
+            }
         });
         
-        // 为新标签输入框添加回车事件，修正闭包bug
-        const setupNewTagInput = (inputId, categoryKey) => { // 移除allTagsArray参数
+        // 为新标签输入框添加回车事件
+        const setupNewTagInput = (inputId, categoryKey) => { 
             document.getElementById(inputId).addEventListener('keyup', (event) => {
                 // 只有在未选择现有商品 (即创建新商品模式) 且按下回车键时才响应
                 if (event.key === 'Enter' && !currentSelectedProductForAdmin) {
@@ -1279,6 +1409,20 @@
         setupNewTagInput('new-scene', 'scenes');
 
         uploadButton.addEventListener('click', uploadImages); // 绑定上传按钮点击事件
+
+        // 为中心详情视图中的删除按钮添加事件监听器（利用事件委托）
+        detailView.addEventListener('click', async (e) => {
+            const deleteButton = e.target.closest('.delete-image-btn');
+            if (deleteButton) {
+                e.preventDefault();
+                const imagePath = deleteButton.dataset.imagePath;
+                if (imagePath) {
+                    await deleteImage(imagePath);
+                } else {
+                    showStatusMessage('无法获取图片路径进行删除。', 'error');
+                }
+            }
+        });
     });
   </script>
 </body>
