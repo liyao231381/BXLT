@@ -661,14 +661,17 @@
         body {
             flex-direction: column; /* 小屏幕下改为垂直堆叠 */
         }
+        .integrated-container { /* 确保容器在移动端也垂直堆叠 */
+            flex-direction: column;
+        }
         .gallery-column, .detail-column, .admin-column {
             width: 100%;
             min-width: unset;
             flex: none;
+            max-height: 100vh; /* 移除最大高度限制，让内容自适应 */
         }
         .detail-column .product-detail-content {
             width: 90%; /* 移动端详情页宽度 */
-            max-width: 400px;
             margin: 20px auto;
         }
     }
