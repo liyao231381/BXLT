@@ -560,8 +560,15 @@
         uploadButton.textContent = '上传中...';
         let successCount = 0;
         let failCount = 0;
-        
+        let uploadStopped = false; // 新增标志位，表示上传是否被中断
+
         for (let i = 0; i < selectedFilePreviews.length; i++) {
+            if (uploadStopped) {
+                selectedFilePreviews[i].status = 'pending'; // 未上传的文件保持 pending 状态
+                renderSelectedFilePreviews();
+                continue; // 跳过后续上传
+            }
+
             selectedFilePreviews[i].status = 'uploading'; // 设置为正在上传
             renderSelectedFilePreviews(); // 立即更新UI
             const success = await uploadSingleImage(selectedFilePreviews[i].file, uploadFolder, apiToken);
@@ -571,21 +578,21 @@
             } else {
                 selectedFilePreviews[i].status = 'failed'; // 设置为上传失败
                 failCount++;
+                uploadStopped = true; // 设置标志位，中断后续上传
+                showStatusMessage(`上传 "${selectedFilePreviews[i].file.name}" 失败，已暂停所有后续上传任务。`, 'error');
             }
             renderSelectedFilePreviews(); // 立即更新UI
         }
         
-        let finalMessage = `上传完成。成功：${successCount}，失败：${failCount}。`;
+        let finalMessage = '';
+        if (uploadStopped) {
+            finalMessage = `上传任务已中断。成功：${successCount}，失败：${failCount}。`;
+        } else {
+            finalMessage = `所有文件上传完成。成功：${successCount}，失败：${failCount}。`;
+        }
         showStatusMessage(finalMessage, failCount > 0 ? 'error' : 'success');
-        
-        filesToUpload = []; // 清空待上传文件列表
-        selectedFilePreviews = []; // 清空已选择文件预览列表
-        updateFileListDisplay(); // 更新显示，上传按钮会再次禁用
-        renderSelectedFilePreviews(); // 重新渲染已选择图片预览区域
-        uploadButton.textContent = '上传图片';
 
-        // 刷新画廊以显示新上传的图片或商品
-        resetAndLoad();
+        uploadButton.textContent = '上传图片';
     }
     
     async function uploadSingleImage(file, uploadFolder, apiToken) {
@@ -635,7 +642,24 @@
             const result = await response.json();
             if (result.success) {
                 showStatusMessage(`图片 "${imagePath.split('/').pop()}" 删除成功！`, 'success');
-                resetAndLoad(); // 删除成功后刷新所有数据和视图
+                // 模拟删除成功后的效果：从DOM中移除图片
+                const imageElementToRemove = detailView.querySelector(`.delete-image-btn[data-image-path="${imagePath}"]`).closest('.image-wrapper');
+                if (imageElementToRemove) {
+                    imageElementToRemove.remove();
+                }
+
+                // 更新 currentSelectedProductForAdmin 中的图片列表
+                if (currentSelectedProductForAdmin && currentSelectedProductForAdmin.images) {
+                    currentSelectedProductForAdmin.images = currentSelectedProductForAdmin.images.filter(img => img.fullPath !== imagePath);
+                    // 如果所有图片都被删除了，则隐藏详情视图
+                    if (currentSelectedProductForAdmin.images.length === 0) {
+                        hideProductDetail();
+                        // 还需要从 allProducts 中移除这个商品，并刷新画廊
+                        allProducts = allProducts.filter(p => p.path !== currentSelectedProductForAdmin.path);
+                        applyFilters(); // 重新应用筛选器以刷新画廊
+                        clearAdminProductSelection(); // 清空管理后台选择
+                    }
+                }
             } else {
                 throw new Error(result.error || '未知删除错误');
             }
