@@ -276,7 +276,7 @@
         let startX = 0;
         let currentX = 0;
         let isSwiping = false;
-        const swipeThreshold = 50; // 滑动距离阈值 (px)
+        const swipeThreshold = 100; // 滑动距离阈值 (px)
 
         modalElement.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
