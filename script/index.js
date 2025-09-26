@@ -209,6 +209,7 @@
             </div>
         `;
         modalContainer.appendChild(modalDiv);
+        addSwipeToClose(modalDiv, modalId); // 添加滑动关闭功能
     }
 
     // --- 模态框控制 ---
@@ -218,7 +219,7 @@
         if (modal) {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            history.pushState({ modalId: modalId }, '', `#${modalId}`); // 使用 pushState 添加历史记录
+            window.location.hash = modalId; // 可选：仍然更新哈希以便分享
             // Fancybox 会自动处理点击事件，无需手动初始化
         }
     }
@@ -229,7 +230,9 @@
             modal.classList.remove('active');
             document.body.style.overflow = '';
             // 清除哈希，避免用户刷新页面时模态框仍然打开
-            // Fancybox 会自动关闭，无需手动销毁
+            if (window.location.hash === `#${modalId}`) {
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+            }
             // Fancybox 会自动关闭，无需手动销毁
         }
     }
@@ -267,31 +270,49 @@
         }
     });
 
-    // 监听 popstate 事件，处理移动端返回操作
-    window.addEventListener('popstate', (event) => {
-        const currentHashId = window.location.hash.substring(1);
-        const activeModals = document.querySelectorAll('.modal.active');
 
-        // 如果当前没有哈希，或者历史状态中没有模态框ID，则关闭所有模态框
-        // 否则，如果哈希存在，但没有对应的活动模态框，也关闭所有模态框
-        if (!currentHashId || !event.state || !event.state.modalId) {
-            if (activeModals.length > 0) { // 只有当有模态框打开时才执行关闭
-                closeAllModalsAndClearHash();
+    // --- 滑动关闭功能 ---
+    function addSwipeToClose(modalElement, modalId) {
+        let startX = 0;
+        let currentX = 0;
+        let isSwiping = false;
+        const swipeThreshold = 50; // 滑动距离阈值 (px)
+
+        modalElement.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isSwiping = true;
+            modalElement.style.transition = 'none'; // 禁用过渡，以便平滑拖动
+        });
+
+        modalElement.addEventListener('touchmove', (e) => {
+            if (!isSwiping) return;
+            currentX = e.touches[0].clientX;
+            const diffX = currentX - startX;
+
+            // 只允许向右滑动
+            if (diffX > 0) {
+                modalElement.style.transform = `translateX(${diffX}px)`;
             }
-        } else {
-            // 如果哈希存在，并且历史状态中有modalId，检查是否有对应的活动模态框
-            let foundMatchingActiveModal = false;
-            activeModals.forEach(modal => {
-                if (modal.id === currentHashId) {
-                    foundMatchingActiveModal = true;
-                }
-            });
-            // 如果哈希指向一个模态框，但该模态框没有active类，则打开它
-            if (currentHashId && !foundMatchingActiveModal) {
-                openModal(currentHashId);
+        });
+
+        modalElement.addEventListener('touchend', () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            modalElement.style.transition = ''; // 恢复过渡
+            modalElement.style.transform = ''; // 恢复位置
+
+            const diffX = currentX - startX;
+            if (diffX > swipeThreshold) {
+                closeModal(modalId);
             }
-        }
-    });
+        });
+
+        modalElement.addEventListener('touchcancel', () => {
+            isSwiping = false;
+            modalElement.style.transition = ''; // 恢复过渡
+            modalElement.style.transform = ''; // 恢复位置
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         resetAndLoad();
