@@ -229,11 +229,7 @@
             modal.classList.remove('active');
             document.body.style.overflow = '';
             // 清除哈希，避免用户刷新页面时模态框仍然打开
-            // 如果当前哈希是这个模态框的，则执行 history.back()
-            // 这会触发 popstate 事件，并让浏览器回到上一个历史记录状态
-            if (window.location.hash === `#${modalId}`) {
-                history.back();
-            }
+            // Fancybox 会自动关闭，无需手动销毁
             // Fancybox 会自动关闭，无需手动销毁
         }
     }
@@ -273,20 +269,26 @@
 
     // 监听 popstate 事件，处理移动端返回操作
     window.addEventListener('popstate', (event) => {
-        // 当 popstate 触发时，检查当前是否有活动的模态框
+        const currentHashId = window.location.hash.substring(1);
         const activeModals = document.querySelectorAll('.modal.active');
-        if (activeModals.length > 0) {
-            // 如果当前哈希与任何活动模态框的ID不匹配，或者哈希为空，则关闭所有模态框
-            const currentHashId = window.location.hash.substring(1);
-            let foundActiveModalMatchingHash = false;
+
+        // 如果当前没有哈希，或者历史状态中没有模态框ID，则关闭所有模态框
+        // 否则，如果哈希存在，但没有对应的活动模态框，也关闭所有模态框
+        if (!currentHashId || !event.state || !event.state.modalId) {
+            if (activeModals.length > 0) { // 只有当有模态框打开时才执行关闭
+                closeAllModalsAndClearHash();
+            }
+        } else {
+            // 如果哈希存在，并且历史状态中有modalId，检查是否有对应的活动模态框
+            let foundMatchingActiveModal = false;
             activeModals.forEach(modal => {
                 if (modal.id === currentHashId) {
-                    foundActiveModalMatchingHash = true;
+                    foundMatchingActiveModal = true;
                 }
             });
-
-            if (!foundActiveModalMatchingHash) {
-                closeAllModalsAndClearHash();
+            // 如果哈希指向一个模态框，但该模态框没有active类，则打开它
+            if (currentHashId && !foundMatchingActiveModal) {
+                openModal(currentHashId);
             }
         }
     });
