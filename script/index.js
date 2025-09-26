@@ -218,7 +218,7 @@
         if (modal) {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            window.location.hash = modalId; // 可选：仍然更新哈希以便分享
+            history.pushState({ modalId: modalId }, '', `#${modalId}`); // 使用 pushState 添加历史记录
             // Fancybox 会自动处理点击事件，无需手动初始化
         }
     }
@@ -229,8 +229,10 @@
             modal.classList.remove('active');
             document.body.style.overflow = '';
             // 清除哈希，避免用户刷新页面时模态框仍然打开
+            // 如果当前哈希是这个模态框的，则执行 history.back()
+            // 这会触发 popstate 事件，并让浏览器回到上一个历史记录状态
             if (window.location.hash === `#${modalId}`) {
-                history.pushState("", document.title, window.location.pathname + window.location.search);
+                history.back();
             }
             // Fancybox 会自动关闭，无需手动销毁
         }
@@ -266,6 +268,26 @@
     window.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             closeAllModalsAndClearHash();
+        }
+    });
+
+    // 监听 popstate 事件，处理移动端返回操作
+    window.addEventListener('popstate', (event) => {
+        // 当 popstate 触发时，检查当前是否有活动的模态框
+        const activeModals = document.querySelectorAll('.modal.active');
+        if (activeModals.length > 0) {
+            // 如果当前哈希与任何活动模态框的ID不匹配，或者哈希为空，则关闭所有模态框
+            const currentHashId = window.location.hash.substring(1);
+            let foundActiveModalMatchingHash = false;
+            activeModals.forEach(modal => {
+                if (modal.id === currentHashId) {
+                    foundActiveModalMatchingHash = true;
+                }
+            });
+
+            if (!foundActiveModalMatchingHash) {
+                closeAllModalsAndClearHash();
+            }
         }
     });
 
