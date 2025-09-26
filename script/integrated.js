@@ -26,6 +26,8 @@
     // 新增：已选择图片缩略图显示区域的 DOM 引用
     const selectedImagesGrid = document.getElementById('selected-images-grid');
     const noSelectedImagesMessage = document.getElementById('no-selected-images-message');
+    const detailLoadingOverlay = document.getElementById('detail-loading-overlay');
+    const detailCountdown = document.getElementById('detail-countdown');
 
     // ==================== 全局状态变量 ====================
     let allProducts = [];
@@ -641,6 +643,49 @@
         showStatusMessage(finalMessage, failCount > 0 ? 'error' : 'success');
 
         uploadButton.textContent = '上传图片';
+
+        // 如果所有文件都上传成功，则重新加载画廊和详情
+        if (failCount === 0 && !uploadStopped) {
+            const previouslySelectedProductPath = currentSelectedProductForAdmin ? currentSelectedProductForAdmin.path : null;
+            
+            // 保持已选择的文件列表和预览不变
+            // filesToUpload = [];
+            // selectedFilePreviews = [];
+            // updateFileListDisplay();
+            // renderSelectedFilePreviews();
+
+            await fetchAllProducts(); // 重新加载所有商品数据，这将刷新 gallery-column
+
+            // 显示详情页加载动画和倒计时
+            detailView.classList.add('active'); // 确保详情视图可见，以便加载动画可以覆盖
+            detailPlaceholder.style.display = 'none'; // 隐藏占位符
+            detailLoadingOverlay.classList.remove('hidden');
+            startCountdown(5); // 开始5秒倒计时
+
+            // 延迟5秒后重新加载 detail-column 和 admin-column
+            setTimeout(() => {
+                // 隐藏详情页加载动画和倒计时
+                detailLoadingOverlay.classList.add('hidden');
+
+                // 重新加载后，根据之前的选择或第一个商品来显示详情
+                let productToDisplay = null;
+                if (previouslySelectedProductPath) {
+                    productToDisplay = allProducts.find(p => p.path === previouslySelectedProductPath);
+                }
+                
+                if (!productToDisplay && allProducts.length > 0) {
+                    productToDisplay = allProducts[0]; // 如果没有之前选择的商品，则显示第一个商品
+                }
+
+                if (productToDisplay) {
+                    displayProductDetails(productToDisplay);
+                    // admin-column 会在 displayProductDetails 内部通过 loadProductIntoAdminForm 更新
+                } else {
+                    hideProductDetail(); // 如果没有商品可显示，则隐藏详情
+                    clearAdminProductSelection(); // 如果没有商品可显示，则清空管理后台的选择状态，使其回到创建模式
+                }
+            }, 5000); // 延迟5秒
+        }
     }
     
     async function uploadSingleImage(file, uploadFolder, apiToken) {
@@ -751,6 +796,24 @@
         clearAdminProductSelection();
         fetchAllProducts();
         hideProductDetail();
+    }
+
+    /**
+     * 开始详情页的倒计时显示
+     * @param {number} seconds - 倒计时秒数
+     */
+    function startCountdown(seconds) {
+        let count = seconds;
+        detailCountdown.textContent = `${count}秒`;
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                detailCountdown.textContent = `${count}秒`;
+            } else {
+                clearInterval(countdownInterval);
+                detailCountdown.textContent = ''; // 倒计时结束清空
+            }
+        }, 1000);
     }
     
     document.addEventListener('DOMContentLoaded', () => {

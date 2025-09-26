@@ -39,6 +39,11 @@
             <!-- 商品详情将动态加载到这里 -->
         </div>
         <p class="placeholder-message" id="detail-placeholder">点击左侧商品查看详情</p>
+        <div id="detail-loading-overlay" class="detail-loading-overlay hidden">
+            <span class="spinner"></span>
+            <p>正在刷新详情，请稍候...</p>
+            <p id="detail-countdown">5秒</p>
+        </div>
     </div>
 
     <!-- 右侧：服装管理后台 -->
