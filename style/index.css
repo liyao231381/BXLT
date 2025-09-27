@@ -206,6 +206,7 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       padding: 0;
+      transition: transform 0.3s ease-out; /* 添加过渡效果 */
     }
     .modal.active {
         display: flex;

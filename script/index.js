@@ -307,10 +307,8 @@
             currentX = e.touches[0].clientX;
             const diffX = currentX - startX;
 
-            // 只允许向右滑动
-            if (diffX > 0) {
-                modalElement.style.transform = `translateX(${diffX}px)`;
-            }
+            // 允许向左或向右滑动，但主要关注左滑
+            modalElement.style.transform = `translateX(${diffX}px)`;
         });
 
         modalElement.addEventListener('touchend', () => {
@@ -320,7 +318,10 @@
             modalElement.style.transform = ''; // 恢复位置
 
             const diffX = currentX - startX;
-            if (diffX > swipeThreshold) {
+            // 如果是左滑且滑动距离超过阈值，则关闭模态框
+            if (diffX < -swipeThreshold) {
+                closeModal(modalId);
+            } else if (diffX > swipeThreshold) { // 保留右滑关闭功能
                 closeModal(modalId);
             }
         });
