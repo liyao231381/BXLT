@@ -11,13 +11,21 @@
 <body>
   <div class="container">
     <header>
-      <div class="logo"><a href="#">李瑶的服装店</a></div>
+      <div class="logo">
+        <a href="#">李 瑶 的 服 装 店</a>
+        <p>请截图到微信下单，价格优惠</p>
+      </div>
       <nav id="main-nav">
         <!-- 导航筛选器将动态加载到这里 -->
-        <div id="filter-style" class="filter-group"><strong>款式:</strong><div class="filter-tags"></div></div>
         <div id="filter-tag" class="filter-group"><strong>标签:</strong><div class="filter-tags"></div></div>
         <div id="filter-season" class="filter-group"><strong>季节:</strong><div class="filter-tags"></div></div>
         <div id="filter-scene" class="filter-group"><strong>场景:</strong><div class="filter-tags"></div></div>
+        <!-- 仅修改款式筛选器！ -->
+        <div id="filter-style" class="filter-group style-card-group">
+            <div class="filter-tags style-card-tags">
+                <!-- 款式卡片将动态加载到这里 -->
+            </div>
+        </div>
       </nav>
     </header>
 

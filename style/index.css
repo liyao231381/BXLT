@@ -1,3 +1,5 @@
+    @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+
     /* CSS Reset (Simplified) - 基础样式重置 */
     body, h1, h2, h3, p, ul, li, figure {
       margin: 0;
@@ -38,32 +40,48 @@
 
     header {
       background-color: #fff;
-      padding: 15px 0;
+      padding: 0 0 5px 0;
       text-align: center;
       margin-bottom: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* 轻微阴影 */
+      border-radius: 10px;
     }
 
     header .logo {
-      font-size: 1.8rem;
+      font-size: 2rem;
       font-weight: bold;
-      color: #333;
-      margin-bottom: 15px;
+      color: #fff; /* 更改文字颜色以适应背景 */
+      padding: 30px; /* 增加内边距 */
+      border-radius: 10px 10px 0 0; /* 添加圆角 */
+      background-image: url('https://img.liyao.sbs/file/1759008570587_已修改已修改窗帘布站姿五图3.png');
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(0, 0, 0, 0.5); /* 半透明黑色背景 */
+      background-blend-mode: overlay; /* 混合模式，使图片和颜色叠加 */
+      aspect-ratio: 9 / 2;
+      font-family: 'ZCOOL KuaiLe', sans-serif;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: #ffffff;
+      margin-top: 5px;
+      font-family: 'Times New Roman', Times, serif;
     }
 
     /* 导航样式 - 根据新的筛选需求重新设计 */
     nav {
       border-top: 1px solid #eee;
-      padding-top: 10px;
+      padding-top: 15px;
     }
     
     /* [修复 1] 使用 Flexbox 让 Label 和标签在同一行 */
     .filter-group {
-      margin-bottom: 10px;
       padding: 0 10px;
       display: flex;
       align-items: center; /* 垂直居中对齐 */
       flex-wrap: wrap; /* 允许标签换行 */
+      margin-bottom: 5px;
     }
     .filter-group strong {
         color: #555;
@@ -72,22 +90,83 @@
         flex-shrink: 0; /* 防止 Label 被压缩 */
     }
 
+    
     nav .filter-tags { /* 用于包裹标签的 flex 容器 */
         display: flex;
         flex-wrap: wrap; /* 允许标签换行 */
         gap: 8px; /* 标签间距 */
     }
 
+#filter-style.style-card-group {
+    background-color: #fcfcfc; /* 略微不同的背景色，区分与其他筛选器 */
+    padding: 10px 10px 0 10px; /* 内边距 */
+    border-radius: 0px; /* 圆角边框 */
+    margin-top: 10px; /* 与上方筛选器的间隔 */
+    border-top: 1px solid #eee; /* 顶部边框 */
+}
+
+#filter-style.style-card-group strong {
+    display: block; /* 标题独占一行 */
+    font-size: 1.15em; /* 标题字体略大 */
+    margin-bottom: 10px; /* 标题与卡片标签的间距 */
+    color: #2c3e50; /* 更深的主题色 */
+    text-align: center; /* 标题居中 */
+}
+
+/* 针对包裹实际卡片标签的 div 样式 */
+.filter-tags.style-card-tags {
+    display: flex; /* 使用 flexbox 布局卡片 */
+    flex-wrap: wrap; /* 允许卡片换行 */
+    gap: 4px; /* 卡片之间的间距 */
+    padding: 0 5px; /* 略微的内边距 */
+    background-color: #fff;
+}
+
+/* 针对单个卡片标签的样式 */
+/* 注意：这里仍然使用 .filter-tag 作为单个卡片的基类 */
+.filter-tags.style-card-tags .filter-tag {
+    flex-direction: column; /* 内容垂直排列 */
+    background-color: #fff; /* 卡片背景色 */
+    color: #555; /* 字体颜色 */
+    border-radius: 4px; /* 圆角大于普通标签 */
+    line-height: 1.3;
+    transition: all 0.25s ease-in-out;
+    cursor: pointer;
+    text-align: center;
+    flex-shrink: 0; /* 防止卡片被压缩 */
+    font-weight: 500;
+}
+
+.filter-tags.style-card-tags .filter-tag.active {
+    background-color: #ffa500; /* 选中时的背景色 */
+    color: #414141; /* 选中时的字体颜色 */
+    border-color: #007bff;
+    transform: scale(1.02); /* 选中时稍微放大和上移 */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.filter-tags.style-card-tags .filter-tag:hover:not(.active) {
+    background-color: #e6f7ff; /* 悬停时的背景色 */
+    border-color: #91d5ff;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+}
+
+/* 媒体查询：在大屏幕上增加卡片尺寸和数量 */
+@media (min-width: 768px) {
+    .filter-tags.style-card-tags .filter-tag {
+        font-size: 1em;
+    }
+}
+
     nav a.filter-tag {
         display: inline-block;
         padding: 4px 8px;
-        background-color: #e9ecef; /* 默认背景色 */
         color: #495057; /* 默认文字颜色 */
-        border-radius: 5px; /* 圆角标签 */
         font-size: 0.85rem;
-        transition: background-color 0.2s, color 0.2s;
         flex-shrink: 0; /* 防止标签挤压 */
         cursor: pointer; /* 确保可点击 */
+        border-radius: 4px;
     }
 
     nav a.filter-tag.active { /* 选中状态 */
@@ -382,6 +461,26 @@
 
     /* 媒体查询 */
     @media (min-width: 768px) {
+        header .logo {
+          font-size: 3rem;
+          font-weight: bold;
+          color: #000000; /* 更改文字颜色以适应背景 */
+          padding: 10px; /* 增加内边距 */
+          border-radius: 10px; /* 添加圆角 */
+          background-image: unset;
+          background-size: unset;
+          background-position: unset;
+          background-color: unset; /* 半透明黑色背景 */
+          background-blend-mode: unset; /* 混合模式，使图片和颜色叠加 */
+          aspect-ratio: unset;
+          font-family: 'ZCOOL KuaiLe', sans-serif;
+        }
+        header p {
+          font-size: 1rem;
+          color: #555555;
+          margin-top: 5px;
+          font-family: 'Times New Roman', Times, serif;
+        }
         .container {
             max-width: 100%;
         }
