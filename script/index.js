@@ -181,7 +181,7 @@
         const galleryId = `gallery-${product.id}`;
 
         const imagesHtml = product.images.map((img, index) => `
-            <a href="${img.src}" data-fancybox="gallery-${product.id}" data-caption="${product.name} - ${index + 1}">
+            <a href="${img.src}" class="glightbox" data-gallery="gallery-${product.id}" data-title="${product.name} - ${index + 1}">
                 <img src="${img.src}" alt="${product.name}" loading="lazy">
             </a>
         `).join('');
@@ -220,7 +220,24 @@
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             window.location.hash = modalId; // 可选：仍然更新哈希以便分享
-            // Fancybox 会自动处理点击事件，无需手动初始化
+            
+            // 初始化 Glightbox
+            const lightbox = GLightbox({
+                selector: `#${modalId} .glightbox`,
+                autoplayVideos: true,
+                touchNavigation: true,
+                loop: true,
+                zoomable: true,
+                openEffect: 'zoom',
+                closeEffect: 'zoom',
+                cssEfects: {
+                    zoom: {
+                        in: 'zoomIn',
+                        out: 'zoomOut'
+                    }
+                }
+            });
+            lightbox.open(); // 打开 Glightbox
         }
     }
 
@@ -233,7 +250,8 @@
             if (window.location.hash === `#${modalId}`) {
                 history.pushState("", document.title, window.location.pathname + window.location.search);
             }
-            // Fancybox 会自动关闭，无需手动销毁
+            // 如果 Magnific Popup 仍然打开，则关闭它
+            // Glightbox 会自动关闭，无需手动销毁
         }
     }
 
@@ -260,7 +278,7 @@
         if (window.location.hash) {
             history.pushState("", document.title, window.location.pathname + window.location.search);
         }
-        // Fancybox 会自动关闭，无需手动销毁
+        // Glightbox 会自动关闭，无需手动销毁
     }
     
     // 按下 Esc 键关闭模态框
