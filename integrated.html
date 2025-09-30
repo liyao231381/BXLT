@@ -133,6 +133,12 @@
 
         <!-- 状态消息显示区域 -->
         <div id="status-message" style="margin-top: 10px;"></div>
+
+        <!-- 导出按钮区域 -->
+        <div style="display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 10px;">
+            <button id="export-long-image-btn" style="margin-right: 15px; padding: 8px 16px; font-size: 1em; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease;">导出长图</button>
+            <button id="export-all-btn" style="padding: 8px 16px; font-size: 1em; background-color: #28a745; color: #fff; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease;">全部导出</button>
+        </div>
       </div>
     </div>
 
@@ -152,6 +158,8 @@
     <span class="spinner"></span>
     加载中...
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="script/integrated.js"></script>
 </body>
 </html>

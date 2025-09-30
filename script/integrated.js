@@ -22,6 +22,8 @@
     const clearSelectedFilesBtn = document.getElementById('clear-selected-files-btn'); // 新增：清空选择按钮
     const statusMessageDiv = document.getElementById('status-message');
     const clearAdminSelectionBtn = document.getElementById('clear-admin-selection-btn'); // 按钮仍然存在，只是位置改变
+    const exportLongImageBtn = document.getElementById('export-long-image-btn'); // 新增：导出长图按钮
+    const exportAllBtn = document.getElementById('export-all-btn'); // 新增：全部导出按钮
 
     // 新增：已选择图片缩略图显示区域的 DOM 引用
     const selectedImagesGrid = document.getElementById('selected-images-grid');
@@ -816,6 +818,109 @@
         }, 1000);
     }
     
+    /**
+     * 生成长图并下载
+     * @param {object} product - 商品对象
+     * @param {HTMLElement} targetElement - 要截图的 DOM 元素
+     * @param {string} filename - 导出的文件名
+     */
+    async function generateLongImageAndDownload(product, targetElement, filename) {
+        showLoading();
+        try {
+            // 创建一个临时的 div 来承载所有图片，以便 html2canvas 能够正确捕获
+            const tempDiv = document.createElement('div');
+            tempDiv.style.width = '800px'; // 设置一个固定宽度，确保图片按预期排列
+            tempDiv.style.backgroundColor = '#fff'; // 背景色，避免透明
+            tempDiv.style.padding = '0';
+            tempDiv.style.boxSizing = 'border-box';
+            tempDiv.style.position = 'absolute'; // 确保不影响页面布局
+            tempDiv.style.left = '-9999px'; // 移出可视区域
+            tempDiv.style.top = '-9999px';
+
+            // 添加商品信息
+            const infoDiv = document.createElement('div');
+            infoDiv.style.textAlign = 'center';
+            infoDiv.style.fontSize = '24px';
+            infoDiv.style.fontWeight = 'bold';
+            infoDiv.style.marginTop = '0';
+            infoDiv.style.marginBottom = '20px';
+            infoDiv.innerHTML = `<p>${product.price} ${product.name}</p>`;
+            tempDiv.appendChild(infoDiv);
+
+            product.images.forEach(img => {
+                const imgElement = document.createElement('img');
+                imgElement.src = img.src;
+                imgElement.style.width = '100%'; // 图片宽度占满容器
+                imgElement.style.display = 'block'; // 避免图片底部空白
+                imgElement.style.marginBottom = '0'; // 图片之间留白
+                tempDiv.appendChild(imgElement);
+            });
+
+            document.body.appendChild(tempDiv);
+
+            const canvas = await html2canvas(tempDiv, {
+                scale: 2, // 提高分辨率
+                useCORS: true, // 允许跨域图片
+                allowTaint: true, // 允许污染画布，如果图片来自不同源
+                backgroundColor: '#ffffff' // 设置背景色为白色
+            });
+
+            tempDiv.remove(); // 移除临时元素
+
+            canvas.toBlob((blob) => {
+                saveAs(blob, filename);
+                showStatusMessage(`图片 "${filename}" 导出成功！`, 'success');
+            }, 'image/jpeg', 0.9); // 导出为 JPG，质量 0.9
+
+        } catch (error) {
+            console.error("生成长图失败:", error);
+            showStatusMessage(`生成长图失败: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async function exportLongImage() {
+        if (!currentSelectedProductForAdmin) {
+            showStatusMessage('请先在左侧选择一个商品，或在管理后台选择一个商品进行编辑。', 'error');
+            return;
+        }
+
+        const productName = currentSelectedProductForAdmin.name;
+        const productPrice = currentSelectedProductForAdmin.price.replace('¥', ''); // 移除货币符号
+        const filename = `${productPrice}_${productName}.jpg`;
+
+        // 假设 product-detail-view 是包含所有图片和信息的元素
+        // 注意：直接截图 product-detail-view 可能会包含滚动条等非图片内容
+        // 更好的方法是创建一个临时容器，只包含图片，然后截图
+        await generateLongImageAndDownload(currentSelectedProductForAdmin, detailView, filename);
+    }
+
+    async function exportAllImages() {
+        if (allProducts.length === 0) {
+            showStatusMessage('没有商品可以导出。', 'error');
+            return;
+        }
+
+        showLoading();
+        try {
+            for (const product of allProducts) {
+                const productName = product.name;
+                const productPrice = product.price.replace('¥', '');
+                const filename = `${productPrice}_${productName}.jpg`;
+                await generateLongImageAndDownload(product, detailView, filename);
+                // 每次导出后稍微延迟，避免浏览器卡顿或下载冲突
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            showStatusMessage('所有商品长图已导出完成！', 'success');
+        } catch (error) {
+            console.error("全部导出失败:", error);
+            showStatusMessage(`全部导出失败: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const storedToken = localStorage.getItem(API_TOKEN_KEY);
         if (storedToken) apiTokenInput.value = storedToken;
@@ -889,4 +994,8 @@
             renderSelectedFilePreviews(); // 重新渲染已选择图片预览区域
             showStatusMessage('已清空所有已选择文件。', 'success');
         });
+
+        // 导出按钮的点击事件
+        exportLongImageBtn.addEventListener('click', exportLongImage);
+        exportAllBtn.addEventListener('click', exportAllImages);
     });
