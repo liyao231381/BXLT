@@ -835,3 +835,142 @@
             grid-template-columns: repeat(3, 1fr); /* 移动端2列布局 */
         }
     }
+
+    /* 导出进度模态框样式 */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6); /* 半透明黑色背景 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2500; /* 确保在所有内容之上 */
+    }
+
+    .modal-overlay.hidden {
+        display: none;
+    }
+
+    .modal-content {
+        background-color: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh; /* 限制模态框最大高度 */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* 隐藏超出部分 */
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: #333;
+    }
+
+    .close-button {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        color: #888;
+        transition: color 0.2s;
+    }
+
+    .close-button:hover {
+        color: #333;
+    }
+
+    .modal-body {
+        flex-grow: 1; /* 占据剩余空间 */
+        overflow-y: auto; /* 允许内容垂直滚动 */
+        padding-right: 5px; /* 为滚动条留出空间 */
+    }
+
+    .export-task-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .export-task-item {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 0;
+        border-bottom: 1px dashed #eee;
+    }
+
+    .export-task-item:last-child {
+        border-bottom: none;
+    }
+
+    .task-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .task-name {
+        font-weight: bold;
+        color: #555;
+        flex-grow: 1;
+        margin-right: 10px;
+    }
+
+    .task-status {
+        font-size: 0.9em;
+        padding: 3px 8px;
+        border-radius: 5px;
+        white-space: nowrap;
+    }
+
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .status-processing {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .status-completed {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-failed {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        height: 8px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        background-color: #007bff;
+        border-radius: 5px;
+        transition: width 0.3s ease-in-out;
+    }

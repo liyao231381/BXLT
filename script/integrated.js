@@ -24,6 +24,7 @@
     const clearAdminSelectionBtn = document.getElementById('clear-admin-selection-btn'); // 按钮仍然存在，只是位置改变
     const exportLongImageBtn = document.getElementById('export-long-image-btn'); // 新增：导出长图按钮
     const exportAllBtn = document.getElementById('export-all-btn'); // 新增：全部导出按钮
+    const showExportProgressBtn = document.getElementById('show-export-progress-btn'); // 新增：查看导出进度按钮
 
     // 新增：已选择图片缩略图显示区域的 DOM 引用
     const selectedImagesGrid = document.getElementById('selected-images-grid');
@@ -31,10 +32,18 @@
     const detailLoadingOverlay = document.getElementById('detail-loading-overlay');
     const detailCountdown = document.getElementById('detail-countdown');
 
+    // 新增：导出进度模态框的 DOM 引用
+    const exportProgressModal = document.getElementById('export-progress-modal');
+    const exportTaskList = document.getElementById('export-task-list');
+    const noExportTasksMessage = document.getElementById('no-export-tasks-message');
+    const closeModalButton = exportProgressModal.querySelector('.close-button');
+    const exportProgressTitle = document.getElementById('export-progress-title'); // 新增：导出进度标题的DOM引用
+
     // ==================== 全局状态变量 ====================
     let allProducts = [];
     let currentSelectedProductForAdmin = null; // 存储当前在管理后台选中的商品对象
-    
+    let exportTasks = []; // 新增：存储所有导出任务的数组
+
     // 用于画廊筛选
     let activeFilters = { 
         style: new Set(),
@@ -817,27 +826,120 @@
             }
         }, 1000);
     }
+
+    // ==================== 导出进度模态框相关函数 ====================
+    function renderExportTasks() {
+        exportTaskList.innerHTML = ''; // 清空之前的任务列表
+        const totalTasks = exportTasks.length;
+        const completedTasks = exportTasks.filter(task => task.status === 'completed' || task.status === 'failed').length;
+
+        if (exportProgressTitle) {
+            exportProgressTitle.textContent = `导出进度 (${completedTasks}/${totalTasks})`;
+        }
+
+        if (totalTasks === 0) {
+            noExportTasksMessage.style.display = 'block';
+        } else {
+            noExportTasksMessage.style.display = 'none';
+            exportTasks.forEach(task => {
+                const taskItem = document.createElement('li');
+                taskItem.id = `export-task-${task.id}`;
+                taskItem.className = 'export-task-item';
+                taskItem.innerHTML = `
+                    <div class="task-info">
+                        <span class="task-name">${task.productName}</span>
+                        <span class="task-status status-${task.status}">${task.statusText}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: ${task.progress}%; background-color: ${task.status === 'completed' ? '#28a745' : task.status === 'failed' ? '#dc3545' : '#007bff'};"></div>
+                    </div>
+                `;
+                exportTaskList.appendChild(taskItem);
+            });
+        }
+    }
+
+    function showExportProgressModal() {
+        exportProgressModal.classList.remove('hidden');
+        renderExportTasks(); // 重新渲染任务列表
+    }
+
+    function hideExportProgressModal() {
+        exportProgressModal.classList.add('hidden');
+    }
+
+    /**
+     * 添加一个导出任务到模态框
+     * @param {string} taskId - 任务的唯一ID
+     * @param {string} productName - 商品名称
+     */
+    function addExportTask(taskId, productName) {
+        const newTask = {
+            id: taskId,
+            productName: productName,
+            status: 'pending',
+            statusText: '等待中',
+            progress: 0
+        };
+        exportTasks.push(newTask);
+        renderExportTasks(); // 重新渲染以显示新任务
+    }
+
+    /**
+     * 更新导出任务的进度
+     * @param {string} taskId - 任务的唯一ID
+     * @param {number} progress - 进度百分比 (0-100)
+     */
+    function updateExportTaskProgress(taskId, progress) {
+        const task = exportTasks.find(t => t.id === taskId);
+        if (task) {
+            task.progress = progress;
+            if (progress > 0 && progress < 100 && task.status !== 'processing') {
+                task.status = 'processing';
+                task.statusText = '处理中';
+            }
+            renderExportTasks(); // 重新渲染以更新进度条和状态
+        }
+    }
+
+    /**
+     * 更新导出任务的状态
+     * @param {string} taskId - 任务的唯一ID
+     * @param {'pending'|'processing'|'completed'|'failed'} status - 任务状态
+     * @param {string} message - 状态消息 (可选)
+     */
+    function updateExportTaskStatus(taskId, status, message = '') {
+        const task = exportTasks.find(t => t.id === taskId);
+        if (task) {
+            task.status = status;
+            task.statusText = message || (status === 'completed' ? '已完成' : status === 'failed' ? '失败' : '等待中');
+            if (status === 'completed' || status === 'failed') {
+                task.progress = 100; // 完成或失败时进度设为100%
+            }
+            renderExportTasks(); // 重新渲染以更新状态和进度条颜色
+        }
+    }
     
     /**
      * 生成长图并下载
      * @param {object} product - 商品对象
-     * @param {HTMLElement} targetElement - 要截图的 DOM 元素
      * @param {string} filename - 导出的文件名
+     * @param {string} taskId - 对应的导出任务ID
      */
-    async function generateLongImageAndDownload(product, targetElement, filename) {
-        showLoading();
+    async function generateLongImageAndDownload(product, filename, taskId) {
+        updateExportTaskStatus(taskId, 'processing', '处理中');
+        updateExportTaskProgress(taskId, 0); // 开始时进度为0
+
         try {
-            // 创建一个临时的 div 来承载所有图片，以便 html2canvas 能够正确捕获
             const tempDiv = document.createElement('div');
-            tempDiv.style.width = '800px'; // 设置一个固定宽度，确保图片按预期排列
-            tempDiv.style.backgroundColor = '#fff'; // 背景色，避免透明
+            tempDiv.style.width = '800px';
+            tempDiv.style.backgroundColor = '#fff';
             tempDiv.style.padding = '0';
             tempDiv.style.boxSizing = 'border-box';
-            tempDiv.style.position = 'absolute'; // 确保不影响页面布局
-            tempDiv.style.left = '-9999px'; // 移出可视区域
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
             tempDiv.style.top = '-9999px';
 
-            // 添加商品信息
             const infoDiv = document.createElement('div');
             infoDiv.style.textAlign = 'center';
             infoDiv.style.fontSize = '24px';
@@ -847,36 +949,63 @@
             infoDiv.innerHTML = `<p>${product.price} ${product.name}</p>`;
             tempDiv.appendChild(infoDiv);
 
-            product.images.forEach(img => {
-                const imgElement = document.createElement('img');
-                imgElement.src = img.src;
-                imgElement.style.width = '100%'; // 图片宽度占满容器
-                imgElement.style.display = 'block'; // 避免图片底部空白
-                imgElement.style.marginBottom = '0'; // 图片之间留白
-                tempDiv.appendChild(imgElement);
+            let loadedImagesCount = 0;
+            const totalImages = product.images.length;
+            const imageLoadPromises = product.images.map(img => {
+                return new Promise((resolve, reject) => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = img.src;
+                    imgElement.style.width = '100%';
+                    imgElement.style.display = 'block';
+                    imgElement.style.marginBottom = '0';
+                    imgElement.onload = () => {
+                        loadedImagesCount++;
+                        const progress = Math.floor((loadedImagesCount / totalImages) * 50); // 图片加载占50%
+                        updateExportTaskProgress(taskId, progress);
+                        resolve();
+                    };
+                    imgElement.onerror = () => {
+                        console.error(`图片加载失败: ${img.src}`);
+                        reject(new Error(`图片加载失败: ${img.src}`));
+                    };
+                    tempDiv.appendChild(imgElement);
+                });
             });
 
             document.body.appendChild(tempDiv);
+            await Promise.all(imageLoadPromises); // 等待所有图片加载完成
+
+            updateExportTaskProgress(taskId, 50); // 图片加载完成，进度50%
 
             const canvas = await html2canvas(tempDiv, {
-                scale: 2, // 提高分辨率
-                useCORS: true, // 允许跨域图片
-                allowTaint: true, // 允许污染画布，如果图片来自不同源
-                backgroundColor: '#ffffff' // 设置背景色为白色
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
             });
 
-            tempDiv.remove(); // 移除临时元素
+            tempDiv.remove();
 
-            canvas.toBlob((blob) => {
-                saveAs(blob, filename);
-                showStatusMessage(`图片 "${filename}" 导出成功！`, 'success');
-            }, 'image/jpeg', 0.9); // 导出为 JPG，质量 0.9
+            updateExportTaskProgress(taskId, 80); // 截图完成，进度80%
+
+            return new Promise((resolve, reject) => {
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        saveAs(blob, filename);
+                        updateExportTaskProgress(taskId, 100); // 下载完成，进度100%
+                        updateExportTaskStatus(taskId, 'completed', '已完成');
+                        resolve(true);
+                    } else {
+                        updateExportTaskStatus(taskId, 'failed', '生成图片失败');
+                        reject(new Error('Failed to generate image blob.'));
+                    }
+                }, 'image/jpeg', 0.9);
+            });
 
         } catch (error) {
-            console.error("生成长图失败:", error);
-            showStatusMessage(`生成长图失败: ${error.message}`, 'error');
-        } finally {
-            hideLoading();
+            console.error(`生成长图失败 (${product.name}):`, error);
+            updateExportTaskStatus(taskId, 'failed', `失败: ${error.message}`);
+            return false;
         }
     }
 
@@ -886,14 +1015,23 @@
             return;
         }
 
+        exportTasks = []; // 清空之前的任务列表
         const productName = currentSelectedProductForAdmin.name;
-        const productPrice = currentSelectedProductForAdmin.price.replace('¥', ''); // 移除货币符号
+        const productPrice = currentSelectedProductForAdmin.price.replace('¥', '');
         const filename = `${productPrice}_${productName}.jpg`;
+        const taskId = `single-export-${Date.now()}`; // 为单次导出生成一个任务ID
 
-        // 假设 product-detail-view 是包含所有图片和信息的元素
-        // 注意：直接截图 product-detail-view 可能会包含滚动条等非图片内容
-        // 更好的方法是创建一个临时容器，只包含图片，然后截图
-        await generateLongImageAndDownload(currentSelectedProductForAdmin, detailView, filename);
+        // 立即添加任务并渲染
+        addExportTask(taskId, productName);
+        showExportProgressModal(); // 显示模态框，此时任务已在列表中
+
+        const success = await generateLongImageAndDownload(currentSelectedProductForAdmin, filename, taskId);
+        if (success) {
+            showStatusMessage(`图片 "${filename}" 导出成功！`, 'success');
+        } else {
+            showStatusMessage(`图片 "${filename}" 导出失败！`, 'error');
+        }
+        // 单个导出完成后不立即关闭模态框，让用户查看结果
     }
 
     async function exportAllImages() {
@@ -902,23 +1040,43 @@
             return;
         }
 
-        showLoading();
-        try {
-            for (const product of allProducts) {
-                const productName = product.name;
-                const productPrice = product.price.replace('¥', '');
-                const filename = `${productPrice}_${productName}.jpg`;
-                await generateLongImageAndDownload(product, detailView, filename);
-                // 每次导出后稍微延迟，避免浏览器卡顿或下载冲突
-                await new Promise(resolve => setTimeout(resolve, 500));
+        exportTasks = []; // 清空之前的任务列表
+        const totalProducts = allProducts.length;
+
+        // 预先添加所有任务到列表中
+        allProducts.forEach(product => {
+            const taskId = `export-all-${product.id}`;
+            addExportTask(taskId, product.name);
+        });
+        showExportProgressModal(); // 显示模态框，此时所有任务已在列表中
+
+        let successCount = 0;
+        let failCount = 0;
+        let completedTasksCount = 0; // 新增：跟踪已完成的任务数量
+
+        for (let i = 0; i < totalProducts; i++) {
+            const product = allProducts[i];
+            const productName = product.name;
+            const productPrice = product.price.replace('¥', '');
+            const filename = `${productPrice}_${productName}.jpg`;
+            const taskId = `export-all-${product.id}`; // 使用产品ID作为任务ID
+
+            const success = await generateLongImageAndDownload(product, filename, taskId);
+            if (success) {
+                successCount++;
+            } else {
+                failCount++;
             }
-            showStatusMessage('所有商品长图已导出完成！', 'success');
-        } catch (error) {
-            console.error("全部导出失败:", error);
-            showStatusMessage(`全部导出失败: ${error.message}`, 'error');
-        } finally {
-            hideLoading();
+            completedTasksCount++; // 任务完成（无论成功或失败）
+            // 每次任务完成后更新总进度显示
+            renderExportTasks(); 
+            // 每次导出后稍微延迟，避免浏览器卡顿或下载冲突
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
+        
+        let finalMessage = `所有商品导出完成。成功：${successCount}，失败：${failCount}。`;
+        showStatusMessage(finalMessage, failCount > 0 ? 'error' : 'success');
+        // 导出完成后不立即关闭模态框，让用户查看结果
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -998,4 +1156,13 @@
         // 导出按钮的点击事件
         exportLongImageBtn.addEventListener('click', exportLongImage);
         exportAllBtn.addEventListener('click', exportAllImages);
+        showExportProgressBtn.addEventListener('click', showExportProgressModal); // 新增：查看导出进度按钮的点击事件
+
+        // 模态框关闭事件
+        closeModalButton.addEventListener('click', hideExportProgressModal);
+        exportProgressModal.addEventListener('click', (e) => {
+            if (e.target === exportProgressModal) { // 点击背景遮罩时关闭
+                hideExportProgressModal();
+            }
+        });
     });
