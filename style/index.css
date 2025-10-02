@@ -135,6 +135,26 @@
     text-align: center;
     flex-shrink: 0; /* 防止卡片被压缩 */
     font-weight: 500;
+    /* 移除 position: relative; 因为角标不再绝对定位 */
+}
+
+.filter-tags.style-card-tags .filter-tag .tag-count-badge {
+    /* 移除绝对定位相关样式 */
+    /* position: absolute; */
+    /* top: -8px; */
+    /* right: -8px; */
+    background-color: transparent; /* 背景透明 */
+    color: #00aaff; /* 继承父级颜色或自定义 */
+    border-radius: 0; /* 移除圆角 */
+    padding: 0 0 0 4px; /* 左侧增加一点内边距作为间隔 */
+    font-size: 0.7em; /* 字体大小 */
+    font-weight: normal; /* 字体不加粗 */
+    min-width: unset; /* 移除最小宽度 */
+    text-align: left; /* 文本左对齐 */
+    line-height: inherit; /* 继承父级行高 */
+    box-shadow: none; /* 移除阴影 */
+    z-index: auto; /* 移除 z-index */
+    display: inline; /* 确保与文字在同一行 */
 }
 
 .filter-tags.style-card-tags .filter-tag.active {

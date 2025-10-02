@@ -78,10 +78,16 @@
     }
 
     // --- 筛选器逻辑 ---
+    let styleCounts = {}; // 用于存储款式及其对应的商品数量
+
     function populateFilters() {
         const filters = { style: new Set(), tag: new Set(), season: new Set(), scene: new Set() };
+        styleCounts = {}; // 重置款式数量
         allProducts.forEach(p => {
-            p.styles.forEach(s => filters.style.add(s));
+            p.styles.forEach(s => {
+                filters.style.add(s);
+                styleCounts[s] = (styleCounts[s] || 0) + 1; // 统计款式数量
+            });
             p.tags.forEach(t => filters.tag.add(t));
             p.seasons.forEach(s => filters.season.add(s));
             p.scenes.forEach(s => filters.scene.add(s));
@@ -100,12 +106,33 @@
         ['全部', ...items].forEach(item => {
             const tagLink = document.createElement('a');
             tagLink.className = 'filter-tag';
-            tagLink.textContent = item;
-            
-            if (item === '全部' && activeFilters[filterType].size === 0) {
-                tagLink.classList.add('active');
-            } else if (activeFilters[filterType].has(item)) {
-                tagLink.classList.add('active');
+            tagLink.textContent = item; // 先设置标签文本
+
+            if (item === '全部') {
+                if (activeFilters[filterType].size === 0) {
+                    tagLink.classList.add('active');
+                }
+                // 为“全部”标签添加数量统计，如果它是款式筛选器
+                if (filterType === 'style') {
+                    // “全部”的数量应为所有商品的数量，避免重复计算
+                    const totalProductCount = allProducts.length;
+                    if (totalProductCount > 0) {
+                        const countSpan = document.createElement('span');
+                        countSpan.className = 'tag-count-badge';
+                        countSpan.textContent = totalProductCount;
+                        tagLink.appendChild(countSpan);
+                    }
+                }
+            } else {
+                if (filterType === 'style' && styleCounts[item] !== undefined) {
+                    const countSpan = document.createElement('span');
+                    countSpan.className = 'tag-count-badge';
+                    countSpan.textContent = styleCounts[item];
+                    tagLink.appendChild(countSpan); // 将数量作为子元素追加
+                }
+                if (activeFilters[filterType].has(item)) {
+                    tagLink.classList.add('active');
+                }
             }
 
             tagLink.onclick = () => {
