@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>短视频刷播器 - 类似抖音/TikTok</title>
+    <!-- 引入 Font Awesome 6 CDN 用于图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* 防止滚动条 */
+            user-select: none; /* 禁用文本选择 */
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE/Edge */
+        }
+
+        /* 容器样式 */
+        .video-player-container {
+            width: 100%; /* 默认宽度占满 */
+            height: 100vh; /* 默认高度占满视口 */
+            position: relative;
+            background-color: #1a1a1a;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            display: flex; /* 内部视频居中 */
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease-out; /* 为切换动画添加过渡 */
+        }
+
+        /* 视频元素样式 */
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 关键：完整显示视频，可能留下黑边 */
+            background-color: #000;
+            transition: opacity 0.3s ease-in-out; /* 视频加载时的渐变 */
+        }
+
+        /* 视频信息叠层样式 */
+        .video-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            box-sizing: border-box;
+            pointer-events: none; /* 允许点击穿透到视频 */
+            z-index: 8; /* 确保在播放/暂停图标之下，进度条之上 */
+            transition: opacity 0.3s ease-in-out; /* 添加淡入淡出效果 */
+        }
+        .video-info.hidden {
+            opacity: 0;
+            pointer-events: none; /* 彻底禁用交互 */
+        }
+        .video-info.visible {
+            opacity: 1;
+            pointer-events: auto; /* 恢复交互 */
+        }
+
+        .video-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.2em;
+        }
+
+        .video-info p {
+            margin: 0 0 3px 0;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+
+        .video-info .tag {
+            display: inline-block;
+            background-color: #e91e63;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+
+        /* 加载指示器 */
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 1.2em;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 11;
+            display: none; /* 默认隐藏 */
+        }
+
+        .loading-indicator.active {
+            display: block;
+        }
+
+        /* 错误信息 */
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff4d4f;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 80%;
+            z-index: 12;
+            display: none; /* 默认隐藏 */
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        /* 播放/暂停覆盖层 & 音量图标 & 下载按钮 & 线路切换按钮 & 自动连播按钮 */
+        .overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9;
+            pointer-events: none; /* 允许点击穿透到视频容器，但内部按钮有自己的pointer-events */
+        }
+
+        .play-pause-icon {
+            font-size: 3em;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 20px 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0; /* 默认隐藏 */
+            transition: opacity 0.3s ease;
+            pointer-events: none; /* 允许点击穿透，仅作为指示器 */
+        }
+
+        .play-pause-icon.active {
+            opacity: 1;
+        }
+
+        /* 通用操作按钮样式 (音量、下载、线路切换、自动连播) */
+        .action-button {
+            position: absolute;
+            font-size: 1.5em;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            transition: opacity 0.2s ease-in-out, color 0.2s ease-in-out; /* 添加颜色过渡 */
+            opacity: 0.8; /* 默认透明度提高，使其更显眼 */
+            background-color: transparent; /* 移除背景色 */
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.7); /* 增加文字阴影提高可见度 */
+            pointer-events: auto; /* 确保按钮可以被点击 */
+        }
+        .action-button:hover {
+          opacity: 1; /* 鼠标悬停时完全显示 */
+        }
+
+        .volume-icon {
+            top: 18px;
+            right: 18px;
+        }
+
+        .download-icon, .line-switch-icon, .auto-play-toggle-icon {
+            font-size: 1.2em; /* 稍微小一点 */
+            padding: 10px;
+            height: 20px;
+            width: 20px;
+            display: flex; /* 使用flexbox居中图标 */
+            align-items: center;
+            justify-content: center;
+        }
+
+        .download-icon {
+            bottom: 20px; /* 定位在右下角 */
+            right: 20px;
+        }
+
+        .line-switch-icon { /* 新增线路切换按钮样式 */
+            top: 18px;
+            left: 18px;
+        }
+
+        /* 自动连播开关按钮样式 */
+        .auto-play-toggle-icon {
+            top: 18px;
+            left: 65px; /* 调整位置，在线路切换按钮右侧 */
+            color: #4CAF50; /* 默认开启时为绿色 */
+        }
+        .auto-play-toggle-icon.off {
+            color: rgba(255, 255, 255, 0.4); /* 关闭时为灰色 */
+        }
+
+        /* 进度条样式 */
+        .progress-bar-container {
+            position: absolute;
+            bottom: 0; /* 定位在视频容器底部 */
+            left: 0;
+            width: 100%;
+            height: 6px; /* 进度条高度 */
+            background-color: rgba(255, 255, 255, 0.3); /* 背景条颜色 */
+            z-index: 10; /* 确保在视频信息之上 */
+            opacity: 0; /* 默认隐藏 */
+            transition: opacity 0.3s ease-in-out;
+            cursor: pointer;
+            pointer-events: auto; /* 确保进度条可以被点击和拖动 */
+        }
+
+        /* 鼠标悬停在视频容器上时显示进度条 */
+        .video-player-container:hover .progress-bar-container {
+            opacity: 1;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%; /* 初始宽度为0 */
+            background-color: #e91e63; /* 进度填充颜色 */
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .progress-bar-handle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%); /* 居中拖动点 */
+            width: 14px; /* 拖动点大小 */
+            height: 14px;
+            border-radius: 50%;
+            background-color: #fff; /* 拖动点颜色 */
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            left: 0%; /* 初始位置 */
+            z-index: 1; /* 确保在填充条之上 */
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            .video-player-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="video-player-container" id="videoContainer">
+        <!-- 移除了 loop 属性！这是关键 -->
+        <video id="videoPlayer" src="" autoplay playsinline preload="auto"></video>
+
+        <div class="video-info" id="videoInfo">
+            <h3 id="videoNickname"></h3>
+            <p id="videoDesc"></p>
+            <p><span class="tag" id="videoType"></span></p>
+        </div>
+
+        <div class="overlay-container">
+            <!-- 线路切换按钮 -->
+            <div class="action-button line-switch-icon" id="lineSwitchBtn" title="切换视频线路"><i class="fas fa-shuffle"></i></div>
+            <!-- 自动连播开关按钮 -->
+            <div class="action-button auto-play-toggle-icon" id="autoPlayToggleBtn" title="自动连播"><i class="fas fa-toggle-on"></i></div>
+            <!-- 播放/暂停图标 -->
+            <div class="play-pause-icon" id="playPauseIcon"><i class="fas fa-play"></i></div> <!-- 默认显示播放图标 -->
+            <!-- 音量图标 -->
+            <div class="action-button volume-icon" id="volumeIcon" title="切换静音"><i class="fas fa-volume-mute"></i></div> <!-- 默认静音图标 -->
+            <!-- 下载按钮 -->
+            <div class="action-button download-icon" id="downloadBtn" title="下载视频"><i class="fas fa-download"></i></div> <!-- 下载图标 -->
+        </div>
+
+        <!-- 进度条 -->
+        <div class="progress-bar-container" id="progressBarContainer">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+            <div class="progress-bar-handle" id="progressBarHandle"></div>
+        </div>
+
+        <div class="loading-indicator" id="loadingIndicator">加载中...</div>
+        <div class="error-message" id="errorMessage">
+            <p>加载视频失败，请稍后再试。</p>
+            <p id="errorDetails"></p>
+        </div>
+    </div>
+
+    <script>
+        // 开发者ID和KEY (用于需要认证的API)
+        const DEVELOPER_ID = "10003120";
+        const DEVELOPER_KEY = "bfb75036b210ed35bee6e002d623293c";
+
+        // 定义多个API线路
+        const API_LINES = [
+            {
+                name: "线路1 (apihz.cn)",
+                url: "https://cn.apihz.cn/api/fun/girl.php",
+                needsAuth: true,
+                parseData: (apiResponse) => ({
+                    video: apiResponse.video,
+                    nickname: apiResponse.nickname || '未知作者',
+                    // 根据实际API响应，如果描述字段是 `response` 则取 `response`，否则取 `desc`，最后给默认值
+                    desc: apiResponse.response || apiResponse.desc || '暂无描述。', 
+                    type: apiResponse.type || '未分类',
+                    hasInfo: true
+                })
+            },
+            {
+                name: "线路2 (xxapi.cn)",
+                url: "https://v2.xxapi.cn/api/meinv",
+                needsAuth: false,
+                parseData: (apiResponse) => ({
+                    video: apiResponse.data,
+                    nickname: '',
+                    desc: '',
+                    type: '',
+                    hasInfo: false
+                })
+            }
+        ];
+
+        let currentApiLineIndex = 1; // 当前使用的API线路索引，默认使用第二个 (xxapi.cn)
+
+        // DOM 元素引用
+        const videoContainer = document.getElementById('videoContainer');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoInfoElement = document.getElementById('videoInfo');
+        const videoNickname = document.getElementById('videoNickname');
+        const videoDesc = document.getElementById('videoDesc');
+        const videoType = document.getElementById('videoType');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorDetails = document.getElementById('errorDetails');
+
+        // 图标引用
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const playPauseIconInner = playPauseIcon.querySelector('i');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const volumeIconInner = volumeIcon.querySelector('i');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const lineSwitchBtn = document.getElementById('lineSwitchBtn');
+        const autoPlayToggleBtn = document.getElementById('autoPlayToggleBtn');
+        const autoPlayToggleBtnInner = autoPlayToggleBtn.querySelector('i');
+
+        // 进度条引用
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const progressBarHandle = document.getElementById('progressBarHandle');
+
+        let videoList = [];
+        let currentIndex = -1;
+        let isMuted = true;
+        let isAutoPlayNext = true; // 自动连播默认开启
+
+        // --- 滚轮切换相关变量 ---
+        let scrollDelta = 0;
+        const SCROLL_THRESHOLD = 80;
+
+        // --- 拖拽切换相关变量 ---
+        let touchStartY = 0;
+        let touchEndY = 0;
+        let isSwiping = false;
+        let initialClientY = 0;
+
+        // --- 进度条拖动相关变量 ---
+        let isDraggingProgressBar = false;
+        const SWIPE_THRESHOLD = 50;
+
+        /**
+         * 显示加载指示器
+         */
+        function showLoading() {
+            loadingIndicator.classList.add('active');
+            errorMessage.classList.remove('active');
+            videoPlayer.style.opacity = '0';
+            videoPlayer.pause();
+            playPauseIcon.classList.add('active'); // 加载时显示播放图标，等待视频开始
+        }
+
+        /**
+         * 隐藏加载指示器
+         */
+        function hideLoading() {
+            loadingIndicator.classList.remove('active');
+            videoPlayer.style.opacity = '1';
+        }
+
+        /**
+         * 显示错误信息
+         * @param {string} msg 错误主信息
+         * @param {string} details 错误详细信息
+         */
+        function showError(msg, details = '') {
+            errorMessage.classList.add('active');
+            errorDetails.textContent = details;
+            videoPlayer.style.display = 'none';
+            videoInfoElement.classList.remove('visible');
+            videoInfoElement.classList.add('hidden');
+            document.querySelector('.overlay-container').style.display = 'none';
+            progressBarContainer.style.display = 'none';
+            hideLoading();
+        }
+
+        /**
+         * 隐藏错误信息并恢复正常显示
+         */
+        function hideError() {
+            errorMessage.classList.remove('active');
+            videoPlayer.style.display = 'block';
+            document.querySelector('.overlay-container').style.display = 'flex';
+            progressBarContainer.style.display = 'block';
+        }
+
+        /**
+         * 从API获取视频数据
+         * @returns {Promise<Object>} 包含视频数据的Promise
+         */
+        async function fetchVideoData() {
+            showLoading();
+            const currentLine = API_LINES[currentApiLineIndex];
+            try {
+                let url = currentLine.url;
+
+                if (currentLine.needsAuth) {
+                    url += `?id=${DEVELOPER_ID}&key=${DEVELOPER_KEY}`;
+                }
+
+                console.log(`请求 ${currentLine.name} URL:`, url);
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    hideError();
+                    return currentLine.parseData(data);
+                } else {
+                    throw new Error(data.msg || 'API返回错误');
+                }
+            } catch (error) {
+                console.error(`获取 ${currentLine.name} 视频数据失败:`, error);
+                showError('获取视频数据失败', `${currentLine.name}: ${error.message}`);
+                return null;
+            } finally {
+                hideLoading();
+            }
+        }
+
+        /**
+         * 播放指定视频
+         * @param {Object} video 视频数据对象 (包含video, nickname, desc, type, hasInfo)
+         */
+        function playVideo(video) {
+            if (!video || !video.video) {
+                console.error('无效的视频数据', video);
+                showError('无法播放视频', '视频URL缺失');
+                return;
+            }
+
+            videoPlayer.src = video.video;
+            videoPlayer.load();
+
+            videoPlayer.muted = isMuted; // 应用当前静音状态
+            updateVolumeIcon();
+
+            const playPromise = videoPlayer.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log("视频开始播放:", video.video);
+                    updatePlayPauseUI();
+                }).catch(error => {
+                    console.warn("视频自动播放失败 (可能需要用户交互):", error);
+                    // 自动播放失败时，显示播放按钮，提示用户点击
+                    playPauseIcon.classList.add('active'); 
+                    updatePlayPauseUI();
+                });
+            }
+
+            if (video.hasInfo) {
+                videoNickname.textContent = video.nickname;
+                videoDesc.textContent = video.desc;
+                videoType.textContent = video.type;
+                videoInfoElement.classList.remove('hidden');
+                videoInfoElement.classList.add('visible');
+            } else {
+                videoNickname.textContent = '';
+                videoDesc.textContent = '';
+                videoType.textContent = '';
+                videoInfoElement.classList.remove('visible');
+                videoInfoElement.classList.add('hidden');
+            }
+        }
+
+        /**
+         * 加载并显示下一个视频
+         */
+        async function loadNextVideo() {
+            // 先尝试从本地缓存的 videoList 中播放下一个视频
+            if (currentIndex < videoList.length - 1) {
+                currentIndex++;
+                playVideo(videoList[currentIndex]);
+                return;
+            }
+
+            // 如果没有更多缓存视频，则从API获取新视频
+            const videoData = await fetchVideoData();
+            if (videoData) {
+                videoList.push(videoData); // 将新视频添加到列表
+                currentIndex = videoList.length - 1; // 更新当前索引
+                playVideo(videoData);
+            }
+        }
+
+        /**
+         * 播放上一个视频
+         */
+        function loadPrevVideo() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                playVideo(videoList[currentIndex]);
+            } else {
+                console.log('已经是第一个视频了，无法加载上一个。');
+                // 可以选择在这里提示用户或者重新加载第一个视频
+            }
+        }
+
+        /**
+         * 切换视频播放/暂停状态
+         */
+        function togglePlayPause() {
+            if (videoPlayer.paused) {
+                // 尝试播放时，如果当前是静音，也尝试解除静音，方便用户听声音
+                if (videoPlayer.muted) {
+                    videoPlayer.muted = false;
+                    isMuted = false;
+                    updateVolumeIcon();
+                }
+                videoPlayer.play();
+            } else {
+                videoPlayer.pause();
+            }
+        }
+
+        /**
+         * 更新播放/暂停图标UI
+         * 播放时隐藏图标，暂停时显示播放图标
+         */
+        function updatePlayPauseUI() {
+            if (videoPlayer.paused) {
+                playPauseIcon.classList.add('active'); // 暂停时显示播放图标
+            } else {
+                playPauseIcon.classList.remove('active'); // 播放时隐藏播放图标
+            }
+        }
+
+        /**
+         * 切换音量状态并更新图标
+         */
+        function toggleVolume() {
+            videoPlayer.muted = !videoPlayer.muted;
+            isMuted = videoPlayer.muted;
+            updateVolumeIcon();
+        }
+
+        /**
+         * 更新音量图标
+         */
+        function updateVolumeIcon() {
+            if (isMuted) {
+                volumeIconInner.classList.remove('fa-volume-high');
+                volumeIconInner.classList.add('fa-volume-mute');
+            } else {
+                volumeIconInner.classList.remove('fa-volume-mute');
+                volumeIconInner.classList.add('fa-volume-high');
+            }
+        }
+
+        /**
+         * 下载当前视频
+         */
+        function downloadCurrentVideo() {
+            if (currentIndex === -1 || !videoList[currentIndex] || !videoList[currentIndex].video) {
+                alert('当前没有视频可供下载。');
+                return;
+            }
+
+            const videoUrl = videoList[currentIndex].video;
+            const videoFilename = (videoList[currentIndex].desc || 'video') + '.mp4';
+
+            const a = document.createElement('a');
+            a.href = videoUrl;
+            a.download = videoFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        /**
+         * 切换API线路
+         */
+        function toggleApiLine() {
+            currentApiLineIndex = (currentApiLineIndex + 1) % API_LINES.length;
+            videoList = []; // 清空现有视频列表，因为线路已切换
+            currentIndex = -1; // 重置索引
+            console.log(`已切换到线路: ${API_LINES[currentApiLineIndex].name}`);
+            loadNextVideo(); // 从新线路加载第一个视频
+        }
+
+        /**
+         * 切换自动连播状态并更新UI
+         */
+        function toggleAutoPlayNext() {
+            isAutoPlayNext = !isAutoPlayNext;
+            updateAutoPlayNextUI();
+            console.log(`自动连播已${isAutoPlayNext ? '开启' : '关闭'}`);
+        }
+
+        /**
+         * 更新自动连播按钮的UI
+         */
+        function updateAutoPlayNextUI() {
+            if (isAutoPlayNext) {
+                autoPlayToggleBtnInner.classList.remove('fa-toggle-off');
+                autoPlayToggleBtnInner.classList.add('fa-toggle-on');
+                autoPlayToggleBtn.classList.remove('off'); // 移除灰色样式
+            } else {
+                autoPlayToggleBtnInner.classList.remove('fa-toggle-on');
+                autoPlayToggleBtnInner.classList.add('fa-toggle-off');
+                autoPlayToggleBtn.classList.add('off'); // 添加灰色样式
+            }
+        }
+
+        /**
+         * 更新进度条和拖动点位置
+         * @param {MouseEvent|TouchEvent} e 事件对象
+         */
+        function updateProgressBar(e) {
+            const rect = progressBarContainer.getBoundingClientRect();
+            let clientX = e.clientX;
+            if (e.touches && e.touches[0]) {
+                clientX = e.touches[0].clientX;
+            }
+            
+            let x = clientX - rect.left;
+            let percent = (x / rect.width);
+            percent = Math.max(0, Math.min(1, percent));
+
+            const newTime = percent * videoPlayer.duration;
+            videoPlayer.currentTime = newTime;
+
+            progressBarFill.style.width = `${percent * 100}%`;
+            progressBarHandle.style.left = `${percent * 100}%`;
+        }
+
+        // --- 事件监听器 ---
+
+        // 视频播放结束时，根据自动连播状态决定是播放下一个还是重播当前视频
+        videoPlayer.addEventListener('ended', () => {
+            console.log("视频播放结束，检查自动连播状态:", isAutoPlayNext);
+            if (isAutoPlayNext) {
+                loadNextVideo(); // 自动连播开启，加载下一个视频
+            } else {
+                // 自动连播关闭，重播当前视频
+                videoPlayer.currentTime = 0; // 将视频时间设为0
+                videoPlayer.play(); // 再次播放
+                console.log("自动连播关闭，重播当前视频");
+            }
+        });
+        
+        videoPlayer.addEventListener('error', (e) => {
+            console.error('视频播放出错:', e);
+            showError('视频加载或播放失败', `错误代码: ${e.target.error ? e.target.error.code : '未知错误'}`);
+            // 尝试加载下一个视频，避免卡死
+            setTimeout(loadNextVideo, 3000); 
+        });
+
+        videoPlayer.addEventListener('play', updatePlayPauseUI);
+        videoPlayer.addEventListener('pause', updatePlayPauseUI);
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (!isDraggingProgressBar && !isNaN(videoPlayer.duration)) {
+                const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                progressBarFill.style.width = `${progress}%`;
+                progressBarHandle.style.left = `${progress}%`;
+            }
+        });
+
+        // 桌面端点击视频区域切换播放/暂停
+        videoContainer.addEventListener('click', (e) => {
+            // 只有当事件不是来自按钮或进度条时才处理
+            if (e.target === videoContainer || e.target === videoPlayer) {
+                 togglePlayPause();
+            }
+        });
+
+        // 点击音量图标切换音量
+        volumeIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleVolume();
+        });
+
+        // 点击下载按钮下载视频
+        downloadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            downloadCurrentVideo();
+        });
+
+        // 点击线路切换按钮
+        lineSwitchBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleApiLine();
+        });
+
+        // 点击自动连播开关按钮
+        autoPlayToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleAutoPlayNext();
+        });
+
+
+        // --- 滚轮切换事件 ---
+        videoContainer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+
+            scrollDelta += e.deltaY;
+
+            if (scrollDelta > SCROLL_THRESHOLD) {
+                loadNextVideo();
+                scrollDelta = 0;
+            } else if (scrollDelta < -SCROLL_THRESHOLD) {
+                loadPrevVideo();
+                scrollDelta = 0;
+            }
+        }, { passive: false });
+
+        // --- 移动端拖拽切换（垂直方向）和点击暂停/播放 ---
+        videoContainer.addEventListener('touchstart', (e) => {
+            // 如果事件源是按钮或进度条，则不处理
+            if (e.target.closest('.action-button') || e.target.closest('.progress-bar-container')) {
+                return;
+            }
+            touchStartY = e.touches[0].clientY;
+            initialClientY = e.touches[0].clientY;
+            isSwiping = false;
+        });
+
+        videoContainer.addEventListener('touchmove', (e) => {
+            // 如果事件源是按钮或进度条，则不处理
+            if (e.target.closest('.action-button') || e.target.closest('.progress-bar-container')) {
+                return;
+            }
+            // 如果正在拖动进度条，则不进行视频切换的拖拽判断
+            if (isDraggingProgressBar) return;
+
+            touchEndY = e.touches[0].clientY;
+            // 检查Y轴移动距离，判断是否是滑动
+            if (Math.abs(touchEndY - initialClientY) > 10) {
+                isSwiping = true;
+            }
+        });
+
+        videoContainer.addEventListener('touchend', (e) => {
+            // 如果事件源是按钮或进度条，则不处理
+            if (e.target.closest('.action-button') || e.target.closest('.progress-bar-container')) {
+                return;
+            }
+            // 如果正在拖动进度条，不处理视频切换逻辑
+            if (isDraggingProgressBar) return;
+
+            if (isSwiping) { // 如果是滑动操作
+                const swipeDistance = touchStartY - touchEndY;
+
+                if (swipeDistance > SWIPE_THRESHOLD) { // 向上滑动
+                    loadNextVideo();
+                } else if (swipeDistance < -SWIPE_THRESHOLD) { // 向下滑动
+                    loadPrevVideo();
+                }
+            } else { // 如果不是滑动，那就是点击
+                togglePlayPause();
+            }
+            touchStartY = 0;
+            touchEndY = 0;
+            initialClientY = 0;
+            isSwiping = false;
+        });
+
+        // --- 进度条拖动事件 (PC端) ---
+        progressBarContainer.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            isDraggingProgressBar = true;
+            videoPlayer.pause();
+            progressBarContainer.style.opacity = '1';
+            updateProgressBar(e);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingProgressBar) {
+                updateProgressBar(e);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDraggingProgressBar) {
+                isDraggingProgressBar = false;
+                videoPlayer.play();
+                progressBarContainer.style.opacity = '';
+            }
+        });
+
+        // --- 进度条拖动事件 (移动端) ---
+        progressBarContainer.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            isDraggingProgressBar = true;
+            videoPlayer.pause();
+            progressBarContainer.style.opacity = '1';
+            updateProgressBar(e.touches[0]);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDraggingProgressBar) {
+                updateProgressBar(e.touches[0]);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            if (isDraggingProgressBar) {
+                isDraggingProgressBar = false;
+                videoPlayer.play();
+                progressBarContainer.style.opacity = '';
+            }
+        });
+
+
+        // 页面加载完成后立即加载第一个视频
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNextVideo();
+            updatePlayPauseUI();
+            updateVolumeIcon();
+            updateAutoPlayNextUI(); // 初始化自动连播按钮UI
+        });
+    </script>
+</body>
+</html>
