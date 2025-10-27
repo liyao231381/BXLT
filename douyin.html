@@ -162,6 +162,28 @@
             opacity: 1;
         }
 
+        /* seek 指示器（水平拖拽时在中间显示快进/倒退偏移） */
+        .seek-indicator {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 1.4rem;
+            z-index: 20;
+            display: none;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+            pointer-events: none;
+        }
+        .seek-indicator.active {
+            display: block;
+            opacity: 1;
+            transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+        }
+
         /* 通用操作按钮样式 (音量、下载、线路切换、自动连播) */
         .action-button {
             position: absolute;
@@ -197,8 +219,8 @@
         }
 
         .download-icon {
-            bottom: 20px; /* 定位在右下角 */
-            right: 20px;
+            top: 20px; /* 定位在右上角 */
+            right: 65px;
         }
 
         .line-switch-icon { /* 新增线路切换按钮样式 */
@@ -290,6 +312,8 @@
             <div class="action-button volume-icon" id="volumeIcon" title="切换静音"><i class="fas fa-volume-mute"></i></div> <!-- 默认静音图标 -->
             <!-- 下载按钮 -->
             <div class="action-button download-icon" id="downloadBtn" title="下载视频"><i class="fas fa-download"></i></div> <!-- 下载图标 -->
+            <!-- 水平 seek 指示器（快进/倒退） -->
+            <div class="seek-indicator" id="seekIndicator"></div>
         </div>
 
         <!-- 进度条 -->
@@ -361,6 +385,7 @@
         const lineSwitchBtn = document.getElementById('lineSwitchBtn');
         const autoPlayToggleBtn = document.getElementById('autoPlayToggleBtn');
         const autoPlayToggleBtnInner = autoPlayToggleBtn.querySelector('i');
+    const seekIndicator = document.getElementById('seekIndicator');
 
         // 进度条引用
         const progressBarContainer = document.getElementById('progressBarContainer');
@@ -381,6 +406,14 @@
         let touchEndY = 0;
         let isSwiping = false;
         let initialClientY = 0;
+        // 横向滑动（左右）相关，用于进度拖拽
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let isSeeking = false; // 当前是否处于水平拖动进度的状态
+        let wasPlayingBeforeSeek = false;
+        let seekBaseTime = 0;
+        // 用于抑制由 touch 触发后的合成 click 事件，防止触发两次切换
+        let suppressClick = false;
 
         // --- 进度条拖动相关变量 ---
         let isDraggingProgressBar = false;
@@ -705,6 +738,14 @@
 
         // 桌面端点击视频区域切换播放/暂停
         videoContainer.addEventListener('click', (e) => {
+            // 如果刚由 touchend 触发（移动端），抑制随后的合成 click
+            if (suppressClick) {
+                // 清除标志并忽略此次 click
+                suppressClick = false;
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
             // 只有当事件不是来自按钮或进度条时才处理
             if (e.target === videoContainer || e.target === videoPlayer) {
                  togglePlayPause();
@@ -759,7 +800,12 @@
             }
             touchStartY = e.touches[0].clientY;
             initialClientY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+            // 记录是否正在播放，以便结束 seek 时恢复状态
+            wasPlayingBeforeSeek = !videoPlayer.paused;
+            seekBaseTime = videoPlayer.currentTime || 0;
             isSwiping = false;
+            isSeeking = false;
         });
 
         videoContainer.addEventListener('touchmove', (e) => {
@@ -771,7 +817,60 @@
             if (isDraggingProgressBar) return;
 
             touchEndY = e.touches[0].clientY;
-            // 检查Y轴移动距离，判断是否是滑动
+            touchEndX = e.touches[0].clientX;
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - initialClientY;
+
+            // 如果水平移动明显且优先于垂直移动，则进入 seek（进度拖拽）模式
+            if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+                isSeeking = true;
+                isSwiping = false; // 取消垂直滑动行为
+
+                // 计算基于容器宽度的时间偏移，并更新进度
+                const rect = videoContainer.getBoundingClientRect();
+                const percentDelta = dx / rect.width; // 正值为向右快进
+                if (!isNaN(videoPlayer.duration) && videoPlayer.duration > 0) {
+                    let newTime = seekBaseTime + percentDelta * videoPlayer.duration;
+                    newTime = Math.max(0, Math.min(videoPlayer.duration, newTime));
+
+                    // 在拖拽 seek 时暂停视频并更新时间
+                    if (wasPlayingBeforeSeek && !videoPlayer.paused) {
+                        // 如果视频正在播放且没有被暂停，则暂停以降低跳帧（某些设备可选）
+                        videoPlayer.pause();
+                    }
+                    try {
+                        videoPlayer.currentTime = newTime;
+                    } catch (err) {
+                        // 某些浏览器在设置 currentTime 时可能抛错（例如未加载元数据）
+                    }
+
+                    // 同步更新进度条 UI
+                    const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                    progressBarFill.style.width = `${percent}%`;
+                    progressBarHandle.style.left = `${percent}%`;
+
+                    // 更新可视化 seek 指示器（显示偏移秒数）
+                    if (seekIndicator) {
+                        const offsetSec = (videoPlayer.currentTime - seekBaseTime);
+                        seekIndicator.textContent = formatOffset(offsetSec);
+                        seekIndicator.classList.add('active');
+                    }
+                }
+
+                // 格式化偏移显示，精确到0.1s
+                function formatOffset(sec) {
+                    const sign = (sec >= 0) ? '+' : '-';
+                    // 保留一位小数，使用绝对值
+                    const s = Math.abs(sec).toFixed(1);
+                    return sign + s + 's';
+                }
+
+                // 阻止默认滚动行为
+                e.preventDefault();
+                return;
+            }
+
+            // 检查Y轴移动距离，判断是否是滑动（垂直切换）
             if (Math.abs(touchEndY - initialClientY) > 10) {
                 isSwiping = true;
             }
@@ -784,8 +883,23 @@
             }
             // 如果正在拖动进度条，不处理视频切换逻辑
             if (isDraggingProgressBar) return;
-
-            if (isSwiping) { // 如果是滑动操作
+            if (isSeeking) {
+                // 结束水平 seek：若开始前在播放则恢复播放
+                if (wasPlayingBeforeSeek) {
+                    videoPlayer.play().catch(() => {});
+                }
+                // 抑制随后由浏览器合成的 click 事件
+                suppressClick = true;
+                setTimeout(() => { suppressClick = false; }, 350);
+                // 重置 seek 标志
+                isSeeking = false;
+                // 隐藏 seek 指示器
+                if (seekIndicator) {
+                    seekIndicator.classList.remove('active');
+                    // 清空文本
+                    setTimeout(() => { seekIndicator.textContent = ''; }, 200);
+                }
+            } else if (isSwiping) { // 如果是垂直滑动操作
                 const swipeDistance = touchStartY - touchEndY;
 
                 if (swipeDistance > SWIPE_THRESHOLD) { // 向上滑动
@@ -793,12 +907,17 @@
                 } else if (swipeDistance < -SWIPE_THRESHOLD) { // 向下滑动
                     loadPrevVideo();
                 }
-            } else { // 如果不是滑动，那就是点击
+            } else { // 点击（tap）
+                // 抑制随后由浏览器合成的 click 事件，防止触发两次切换
+                suppressClick = true;
+                setTimeout(() => { suppressClick = false; }, 350);
                 togglePlayPause();
             }
             touchStartY = 0;
             touchEndY = 0;
             initialClientY = 0;
+            touchStartX = 0;
+            touchEndX = 0;
             isSwiping = false;
         });
 
